@@ -1,0 +1,23 @@
+{
+  "name": "wissen-ims",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": ["intern", "management", "system", "wissen"],
+  "author": "Wissen Technology",
+  "license": "ISC",
+  "description": "Intern Management System for Wissen Technology",
+  "dependencies": {
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "react-router-dom": "^7.12.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.1.2",
+    "vite": "^7.3.1"
+  }
+}
