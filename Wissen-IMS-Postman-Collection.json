@@ -1,0 +1,872 @@
+{
+  "info": {
+    "name": "Wissen IMS API",
+    "description": "Complete API collection for Wissen Intern Management System",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "collegeId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "internId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "documentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "offerId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Register Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('token', jsonData.token);",
+                  "    pm.environment.set('token', jsonData.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Admin User\",\n  \"email\": \"admin@wissen.com\",\n  \"password\": \"Admin@123\",\n  \"userType\": \"ADMIN\",\n  \"active\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('token', jsonData.token);",
+                  "    pm.environment.set('token', jsonData.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@wissen.com\",\n  \"password\": \"Admin@123\",\n  \"userType\": \"ADMIN\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Colleges",
+      "item": [
+        {
+          "name": "Get All Colleges",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/colleges",
+              "host": ["{{baseUrl}}"],
+              "path": ["colleges"]
+            }
+          }
+        },
+        {
+          "name": "Create College",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('collegeId', jsonData.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"IIT Mumbai\",\n  \"location\": \"Mumbai, Maharashtra\",\n  \"contactPerson\": \"Dr. Sharma\",\n  \"contactEmail\": \"sharma@iitmumbai.ac.in\",\n  \"contactPhone\": \"+91-22-1234-5678\",\n  \"status\": \"VISITED\",\n  \"visitDate\": \"2026-01-15T10:00:00\",\n  \"notes\": \"Premier engineering institute\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/colleges",
+              "host": ["{{baseUrl}}"],
+              "path": ["colleges"]
+            }
+          }
+        },
+        {
+          "name": "Get College by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/colleges/{{collegeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["colleges", "{{collegeId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update College",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"IIT Mumbai - Updated\",\n  \"location\": \"Powai, Mumbai, Maharashtra\",\n  \"contactPerson\": \"Dr. Sharma\",\n  \"contactEmail\": \"sharma@iitmumbai.ac.in\",\n  \"contactPhone\": \"+91-22-1234-5678\",\n  \"status\": \"VISITED\",\n  \"visitDate\": \"2026-01-15T10:00:00\",\n  \"notes\": \"Premier engineering institute - Updated\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/colleges/{{collegeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["colleges", "{{collegeId}}"]
+            }
+          }
+        },
+        {
+          "name": "Search Colleges",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/colleges/search?query=IIT",
+              "host": ["{{baseUrl}}"],
+              "path": ["colleges", "search"],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "IIT"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filter Colleges by Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/colleges/status/VISITED",
+              "host": ["{{baseUrl}}"],
+              "path": ["colleges", "status", "VISITED"]
+            }
+          }
+        },
+        {
+          "name": "Delete College",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/colleges/{{collegeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["colleges", "{{collegeId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Interns",
+      "item": [
+        {
+          "name": "Get All Interns",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/interns",
+              "host": ["{{baseUrl}}"],
+              "path": ["interns"]
+            }
+          }
+        },
+        {
+          "name": "Create Intern",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('internId', jsonData.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Rahul Kumar\",\n  \"email\": \"rahul.kumar@example.com\",\n  \"phone\": \"+91-98765-43210\",\n  \"college\": {\n    \"id\": {{collegeId}}\n  },\n  \"degree\": \"B.Tech\",\n  \"branch\": \"Computer Science\",\n  \"graduationYear\": 2026,\n  \"cgpa\": 8.5,\n  \"status\": \"APPLIED\",\n  \"appliedDate\": \"2026-01-18T09:00:00\",\n  \"skills\": \"Java, Spring Boot, React, PostgreSQL\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/interns",
+              "host": ["{{baseUrl}}"],
+              "path": ["interns"]
+            }
+          }
+        },
+        {
+          "name": "Get Intern by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/interns/{{internId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["interns", "{{internId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Intern",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Rahul Kumar\",\n  \"email\": \"rahul.kumar@example.com\",\n  \"phone\": \"+91-98765-43210\",\n  \"college\": {\n    \"id\": {{collegeId}}\n  },\n  \"degree\": \"B.Tech\",\n  \"branch\": \"Computer Science\",\n  \"graduationYear\": 2026,\n  \"cgpa\": 8.7,\n  \"status\": \"SHORTLISTED\",\n  \"appliedDate\": \"2026-01-18T09:00:00\",\n  \"skills\": \"Java, Spring Boot, React, PostgreSQL, Docker\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/interns/{{internId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["interns", "{{internId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Intern Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/interns/{{internId}}/status?status=SHORTLISTED",
+              "host": ["{{baseUrl}}"],
+              "path": ["interns", "{{internId}}", "status"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "SHORTLISTED",
+                  "description": "Values: NEW, APPLIED, SHORTLISTED, INTERVIEW_SCHEDULED, INTERVIEWED, SELECTED, OFFER_SENT, OFFER_ACCEPTED"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Interns",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/interns/search?query=Rahul",
+              "host": ["{{baseUrl}}"],
+              "path": ["interns", "search"],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "Rahul"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filter Interns by Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/interns/status/SHORTLISTED",
+              "host": ["{{baseUrl}}"],
+              "path": ["interns", "status", "SHORTLISTED"]
+            }
+          }
+        },
+        {
+          "name": "Delete Intern",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/interns/{{internId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["interns", "{{internId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Documents",
+      "item": [
+        {
+          "name": "Get All Documents",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["documents"]
+            }
+          }
+        },
+        {
+          "name": "Get Documents by Intern",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/documents/intern/{{internId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["documents", "intern", "{{internId}}"]
+            }
+          }
+        },
+        {
+          "name": "Upload Document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('documentId', jsonData.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Select a PDF/DOC file"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/documents/upload?internId={{internId}}&documentType=RESUME",
+              "host": ["{{baseUrl}}"],
+              "path": ["documents", "upload"],
+              "query": [
+                {
+                  "key": "internId",
+                  "value": "{{internId}}"
+                },
+                {
+                  "key": "documentType",
+                  "value": "RESUME",
+                  "description": "Values: RESUME, ID_PROOF, MARKSHEET, CERTIFICATE, OTHER"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Verify Document",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/documents/{{documentId}}/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["documents", "{{documentId}}", "verify"]
+            }
+          }
+        },
+        {
+          "name": "Reject Document",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/documents/{{documentId}}/reject?reason=Document quality is poor",
+              "host": ["{{baseUrl}}"],
+              "path": ["documents", "{{documentId}}", "reject"],
+              "query": [
+                {
+                  "key": "reason",
+                  "value": "Document quality is poor"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Download Document",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/documents/{{documentId}}/download",
+              "host": ["{{baseUrl}}"],
+              "path": ["documents", "{{documentId}}", "download"]
+            }
+          }
+        },
+        {
+          "name": "Filter Documents by Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/documents/status/PENDING",
+              "host": ["{{baseUrl}}"],
+              "path": ["documents", "status", "PENDING"]
+            }
+          }
+        },
+        {
+          "name": "Delete Document",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/documents/{{documentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["documents", "{{documentId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Offers",
+      "item": [
+        {
+          "name": "Get All Offers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/offers",
+              "host": ["{{baseUrl}}"],
+              "path": ["offers"]
+            }
+          }
+        },
+        {
+          "name": "Create Offer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('offerId', jsonData.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"intern\": {\n    \"id\": {{internId}}\n  },\n  \"position\": \"Software Development Intern\",\n  \"department\": \"Engineering\",\n  \"stipend\": 25000.00,\n  \"currency\": \"INR\",\n  \"duration\": 6,\n  \"startDate\": \"2026-03-01\",\n  \"endDate\": \"2026-08-31\",\n  \"workMode\": \"HYBRID\",\n  \"location\": \"Mumbai, India\",\n  \"status\": \"DRAFT\",\n  \"benefits\": \"Meals, Transportation, Learning Resources\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/offers",
+              "host": ["{{baseUrl}}"],
+              "path": ["offers"]
+            }
+          }
+        },
+        {
+          "name": "Get Offer by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/offers/{{offerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["offers", "{{offerId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Offers by Intern",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/offers/intern/{{internId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["offers", "intern", "{{internId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Offer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"intern\": {\n    \"id\": {{internId}}\n  },\n  \"position\": \"Software Development Intern\",\n  \"department\": \"Engineering\",\n  \"stipend\": 30000.00,\n  \"currency\": \"INR\",\n  \"duration\": 6,\n  \"startDate\": \"2026-03-01\",\n  \"endDate\": \"2026-08-31\",\n  \"workMode\": \"HYBRID\",\n  \"location\": \"Mumbai, India\",\n  \"status\": \"DRAFT\",\n  \"benefits\": \"Meals, Transportation, Learning Resources, Accommodation\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/offers/{{offerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["offers", "{{offerId}}"]
+            }
+          }
+        },
+        {
+          "name": "Send Offer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/offers/{{offerId}}/send",
+              "host": ["{{baseUrl}}"],
+              "path": ["offers", "{{offerId}}", "send"]
+            }
+          }
+        },
+        {
+          "name": "Accept Offer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/offers/{{offerId}}/accept",
+              "host": ["{{baseUrl}}"],
+              "path": ["offers", "{{offerId}}", "accept"]
+            }
+          }
+        },
+        {
+          "name": "Reject Offer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/offers/{{offerId}}/reject?reason=Got better opportunity",
+              "host": ["{{baseUrl}}"],
+              "path": ["offers", "{{offerId}}", "reject"],
+              "query": [
+                {
+                  "key": "reason",
+                  "value": "Got better opportunity"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filter Offers by Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/offers/status/SENT",
+              "host": ["{{baseUrl}}"],
+              "path": ["offers", "status", "SENT"]
+            }
+          }
+        },
+        {
+          "name": "Delete Offer",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/offers/{{offerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["offers", "{{offerId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Dashboard",
+      "item": [
+        {
+          "name": "Get Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "stats"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

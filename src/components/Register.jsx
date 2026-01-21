@@ -1,20 +1,21 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../services/api';
 import './Register.css';
 
 const Register = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    fullName: '',
+    name: '',
     email: '',
     password: '',
     confirmPassword: '',
-    userType: 'admin',
-    department: '',
-    phone: ''
+    userType: 'ADMIN',
+    active: true
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -24,11 +25,11 @@ const Register = () => {
     setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Validation
-    if (!formData.fullName || !formData.email || !formData.password || !formData.confirmPassword) {
+    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
       setError('Please fill in all required fields');
       return;
     }
@@ -43,11 +44,41 @@ const Register = () => {
       return;
     }
 
-    // Mock registration
-    setSuccess(true);
-    setTimeout(() => {
-      navigate('/login');
-    }, 2000);
+    try {
+      setLoading(true);
+      setError('');
+      
+      const registerData = {
+        fullName: formData.name,
+        email: formData.email,
+        password: formData.password,
+        userType: formData.userType,
+        department: null,
+        phone: null
+      };
+      
+      const response = await api.register(registerData);
+      
+      // Store token
+      localStorage.setItem('token', response.token);
+      
+      // Store user info
+      localStorage.setItem('user', JSON.stringify({
+        email: response.email,
+        name: response.name,
+        userType: response.userType
+      }));
+      
+      setSuccess(true);
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1500);
+    } catch (error) {
+      console.error('Registration error:', error);
+      setError(error.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -84,11 +115,12 @@ const Register = () => {
               <label className="form-label">Full Name *</label>
               <input
                 type="text"
-                name="fullName"
+                name="name"
                 className="form-input"
                 placeholder="John Doe"
-                value={formData.fullName}
+                value={formData.name}
                 onChange={handleChange}
+                required
               />
             </div>
 
@@ -100,47 +132,22 @@ const Register = () => {
                 value={formData.userType}
                 onChange={handleChange}
               >
-                <option value="admin">Admin</option>
-                <option value="hr">HR</option>
+                <option value="ADMIN">Admin</option>
+                <option value="HR">HR</option>
               </select>
             </div>
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Email Address *</label>
-              <input
-                type="email"
-                name="email"
-                className="form-input"
-                placeholder="you@wissen.com"
-                value={formData.email}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Phone Number</label>
-              <input
-                type="tel"
-                name="phone"
-                className="form-input"
-                placeholder="+1 (555) 000-0000"
-                value={formData.phone}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-
           <div className="form-group">
-            <label className="form-label">Department</label>
+            <label className="form-label">Email Address *</label>
             <input
-              type="text"
-              name="department"
+              type="email"
+              name="email"
               className="form-input"
-              placeholder="Human Resources"
-              value={formData.department}
+              placeholder="you@wissen.com"
+              value={formData.email}
               onChange={handleChange}
+              required
             />
           </div>
 
@@ -154,6 +161,7 @@ const Register = () => {
                 placeholder="Min. 6 characters"
                 value={formData.password}
                 onChange={handleChange}
+                required
               />
             </div>
 
@@ -166,6 +174,7 @@ const Register = () => {
                 placeholder="Re-enter password"
                 value={formData.confirmPassword}
                 onChange={handleChange}
+                required
               />
             </div>
           </div>
@@ -177,8 +186,8 @@ const Register = () => {
             </label>
           </div>
 
-          <button type="submit" className="btn btn-primary btn-block">
-            Create Account
+          <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
+            {loading ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
 

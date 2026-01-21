@@ -1,34 +1,57 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
+import api from '../services/api';
 import './Offers.css';
 
 const Offers = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [selectedIntern, setSelectedIntern] = useState(null);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   
   const [formData, setFormData] = useState({
     position: 'Software Engineering Intern',
     department: 'Technology',
-    stipend: '25000',
+    stipend: 25000,
     duration: '6 months',
     startDate: '',
     location: 'Bangalore, India',
     reportingManager: '',
-    workMode: 'Hybrid'
+    workMode: 'HYBRID'
   });
 
-  const [interns] = useState([
-    { id: 1, name: 'Rahul Sharma', email: 'rahul.sharma@example.com', college: 'IIT Delhi', cgpa: '8.5', status: 'ready' },
-    { id: 2, name: 'Priya Patel', email: 'priya.patel@example.com', college: 'BITS Pilani', cgpa: '9.2', status: 'generated' },
-    { id: 3, name: 'Amit Kumar', email: 'amit.kumar@example.com', college: 'NIT Trichy', cgpa: '8.8', status: 'sent' },
-    { id: 4, name: 'Sneha Reddy', email: 'sneha.reddy@example.com', college: 'VIT Vellore', cgpa: '9.0', status: 'ready' },
-  ]);
+  const [interns, setInterns] = useState([]);
+  const [offers, setOffers] = useState([]);
 
-  const [offers, setOffers] = useState([
-    { id: 1, internName: 'Priya Patel', position: 'Software Engineering Intern', generatedDate: '2026-01-15', status: 'generated' },
-    { id: 2, internName: 'Amit Kumar', position: 'Data Analytics Intern', generatedDate: '2026-01-12', status: 'sent' },
-  ]);
+  useEffect(() => {
+    fetchInterns();
+    fetchOffers();
+  }, []);
+
+  const fetchInterns = async () => {
+    try {
+      setLoading(true);
+      const data = await api.get('/interns');
+      setInterns(data);
+    } catch (err) {
+      console.error('Error fetching interns:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchOffers = async () => {
+    try {
+      console.log('Fetching offers...');
+      const data = await api.get('/offers');
+      console.log('Offers received:', data);
+      console.log('Number of offers:', data?.length || 0);
+      setOffers(data);
+    } catch (err) {
+      console.error('Error fetching offers:', err);
+    }
+  };
 
   const handleInputChange = (e) => {
     setFormData({
@@ -42,17 +65,46 @@ const Offers = () => {
     setShowGenerateModal(true);
   };
 
-  const handleSubmitOffer = (e) => {
+  const handleSubmitOffer = async (e) => {
     e.preventDefault();
-    const newOffer = {
-      id: offers.length + 1,
-      internName: selectedIntern.name,
-      position: formData.position,
-      generatedDate: new Date().toISOString().split('T')[0],
-      status: 'generated'
-    };
-    setOffers([...offers, newOffer]);
-    setShowGenerateModal(false);
+    try {
+      setLoading(true);
+      setError('');
+      
+      const offerData = {
+        ...formData,
+        intern: { id: selectedIntern.id }
+      };
+      
+      console.log('Creating offer with data:', offerData);
+      
+      // Create the offer
+      const createdOffer = await api.post('/offers', offerData);
+      console.log('Offer created:', createdOffer);
+      
+      // Update intern status to OFFER_GENERATED
+      await api.put(`/interns/${selectedIntern.id}`, {
+        ...selectedIntern,
+        status: 'OFFER_GENERATED'
+      });
+      
+      // Close modal first
+      setShowGenerateModal(false);
+      
+      // Refresh data - wait a bit to ensure backend has processed
+      setTimeout(async () => {
+        await fetchOffers();
+        await fetchInterns();
+        alert('Offer generated successfully! Intern status updated to OFFER_GENERATED.');
+      }, 500);
+      
+    } catch (err) {
+      setError('Failed to generate offer: ' + (err.message || 'Unknown error'));
+      console.error('Error generating offer:', err);
+      alert('Failed to generate offer. Check console for details.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handlePreview = (intern) => {
@@ -71,11 +123,23 @@ const Offers = () => {
 
   const getStatusBadge = (status) => {
     const statusMap = {
-      'ready': 'badge-info',
-      'generated': 'badge-warning',
-      'sent': 'badge-success'
+      'DRAFT': 'badge-secondary',
+      'GENERATED': 'badge-warning',
+      'SENT': 'badge-info',
+      'ACCEPTED': 'badge-success',
+      'REJECTED': 'badge-danger'
     };
     return statusMap[status] || 'badge-secondary';
+  };
+
+  const formatStatus = (status) => {
+    return status.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+  };
+
+  const getInternsReadyForOffer = () => {
+    return interns.filter(i => 
+      i.status === 'DOCUMENT_VERIFIED'
+    );
   };
 
   return (
@@ -107,18 +171,24 @@ const Offers = () => {
           <div className="stat-item">
             <span className="stat-icon">✅</span>
             <div>
-              <div className="stat-number">{offers.filter(o => o.status === 'sent').length}</div>
+              <div className="stat-number">{offers.filter(o => o.status === 'SENT').length}</div>
               <div className="stat-label">Sent</div>
             </div>
           </div>
           <div className="stat-item">
             <span className="stat-icon">⏳</span>
             <div>
-              <div className="stat-number">{interns.filter(i => i.status === 'ready').length}</div>
+              <div className="stat-number">{getInternsReadyForOffer().length}</div>
               <div className="stat-label">Ready to Generate</div>
             </div>
           </div>
         </div>
+
+        {error && (
+          <div style={{ padding: '12px', background: '#fee', color: '#c33', borderRadius: '8px', marginBottom: '24px' }}>
+            {error}
+          </div>
+        )}
 
         <div className="offers-layout">
           {/* Ready Interns */}
@@ -127,14 +197,14 @@ const Offers = () => {
               <h3 className="card-title">Interns Ready for Offer</h3>
             </div>
             <div className="interns-ready-list">
-              {interns.filter(i => i.status === 'ready').map(intern => (
+              {getInternsReadyForOffer().map(intern => (
                 <div key={intern.id} className="ready-intern-item">
                   <div className="intern-avatar-small">
                     {intern.name.charAt(0)}
                   </div>
                   <div className="intern-info-compact">
                     <div className="intern-name-small">{intern.name}</div>
-                    <div className="intern-details-small">{intern.college} • CGPA: {intern.cgpa}</div>
+                    <div className="intern-details-small">{intern.collegeName || 'N/A'} • CGPA: {intern.cgpa || 'N/A'}</div>
                   </div>
                   <button
                     className="btn btn-primary btn-sm"
@@ -169,40 +239,48 @@ const Offers = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {offers.map(offer => (
-                    <tr key={offer.id}>
-                      <td><strong>{offer.internName}</strong></td>
-                      <td>{offer.position}</td>
-                      <td>{offer.generatedDate}</td>
-                      <td>
-                        <span className={`badge ${getStatusBadge(offer.status)}`}>
-                          {offer.status === 'sent' ? '✓ ' : ''}
-                          {offer.status.charAt(0).toUpperCase() + offer.status.slice(1)}
-                        </span>
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <button
-                            className="btn btn-outline btn-sm"
-                            onClick={() => {
-                              const intern = interns.find(i => i.name === offer.internName);
-                              handlePreview(intern);
-                            }}
-                          >
-                            👁️ Preview
-                          </button>
-                          <button className="btn btn-outline btn-sm">
-                            ⬇️ Download
-                          </button>
-                          {offer.status !== 'sent' && (
-                            <button className="btn btn-primary btn-sm">
-                              📧 Send
+                  {offers && offers.length > 0 ? (
+                    offers.map(offer => (
+                      <tr key={offer.id}>
+                        <td><strong>{offer.intern?.name || 'N/A'}</strong></td>
+                        <td>{offer.position}</td>
+                        <td>{offer.generatedAt ? new Date(offer.generatedAt).toLocaleDateString() : 'N/A'}</td>
+                        <td>
+                          <span className={`badge ${getStatusBadge(offer.status)}`}>
+                            {offer.status === 'SENT' ? '✓ ' : ''}
+                            {formatStatus(offer.status)}
+                          </span>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                              className="btn btn-outline btn-sm"
+                              onClick={() => {
+                                const intern = interns.find(i => i.id === offer.intern?.id);
+                                if (intern) handlePreview(intern);
+                              }}
+                            >
+                              👁️ Preview
                             </button>
-                          )}
-                        </div>
+                            <button className="btn btn-outline btn-sm">
+                              ⬇️ Download
+                            </button>
+                            {offer.status !== 'SENT' && (
+                              <button className="btn btn-primary btn-sm">
+                                📧 Send
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="5" style={{ textAlign: 'center', padding: '24px', color: '#666' }}>
+                        No offers generated yet
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
@@ -256,7 +334,7 @@ const Offers = () => {
                   <div className="form-group">
                     <label className="form-label">Monthly Stipend (₹) *</label>
                     <input
-                      type="text"
+                      type="number"
                       name="stipend"
                       className="form-input"
                       value={formData.stipend}
@@ -323,9 +401,9 @@ const Offers = () => {
                       onChange={handleInputChange}
                       required
                     >
-                      <option value="On-site">On-site</option>
-                      <option value="Remote">Remote</option>
-                      <option value="Hybrid">Hybrid</option>
+                      <option value="ONSITE">On-site</option>
+                      <option value="REMOTE">Remote</option>
+                      <option value="HYBRID">Hybrid</option>
                     </select>
                   </div>
                 </div>

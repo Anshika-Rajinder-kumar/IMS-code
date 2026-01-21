@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../services/api';
 import './Login.css';
 
 const Login = () => {
@@ -7,9 +8,10 @@ const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    userType: 'admin'
+    userType: 'ADMIN'
   });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -19,7 +21,7 @@ const Login = () => {
     setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Simple validation
@@ -28,14 +30,29 @@ const Login = () => {
       return;
     }
 
-    // Mock authentication
-    localStorage.setItem('user', JSON.stringify({
-      email: formData.email,
-      userType: formData.userType,
-      name: formData.userType === 'admin' ? 'Admin User' : 'HR Manager'
-    }));
-    
-    navigate('/dashboard');
+    try {
+      setLoading(true);
+      setError('');
+      
+      const response = await api.login(formData.email, formData.password, formData.userType);
+      
+      // Store token
+      localStorage.setItem('token', response.token);
+      
+      // Store user info
+      localStorage.setItem('user', JSON.stringify({
+        email: response.email,
+        name: response.name,
+        userType: response.userType
+      }));
+      
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Login error:', error);
+      setError(error.message || 'Invalid credentials. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -69,8 +86,8 @@ const Login = () => {
               value={formData.userType}
               onChange={handleChange}
             >
-              <option value="admin">Admin</option>
-              <option value="hr">HR</option>
+              <option value="ADMIN">Admin</option>
+              <option value="HR">HR</option>
             </select>
           </div>
 
@@ -106,8 +123,8 @@ const Login = () => {
             <a href="#" className="forgot-link">Forgot password?</a>
           </div>
 
-          <button type="submit" className="btn btn-primary btn-block">
-            Sign In
+          <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
+            {loading ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
 

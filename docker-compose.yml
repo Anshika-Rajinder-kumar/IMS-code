@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: wissen-postgres
+    environment:
+      POSTGRES_DB: wissen_ims
+      POSTGRES_USER: wissen_user
+      POSTGRES_PASSWORD: wissen_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - wissen-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wissen_user -d wissen_ims"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Spring Boot Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: wissen-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/wissen_ims
+      SPRING_DATASOURCE_USERNAME: wissen_user
+      SPRING_DATASOURCE_PASSWORD: wissen_password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      JWT_SECRET: wissenImsSecretKeyForJwtTokenGenerationAndValidation2026
+      JWT_EXPIRATION: 86400000
+      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://frontend:80
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - backend_uploads:/app/uploads
+    networks:
+      - wissen-network
+    restart: unless-stopped
+
+  # React Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wissen-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - wissen-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  backend_uploads:
+    driver: local
+
+networks:
+  wissen-network:
+    driver: bridge

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../services/api';
 import Sidebar from './Sidebar';
 import './Colleges.css';
 
@@ -8,14 +9,29 @@ const Colleges = () => {
   const [showModal, setShowModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [editingCollege, setEditingCollege] = useState(null);
   
-  const [colleges, setColleges] = useState([
-    { id: 1, name: 'IIT Delhi', location: 'New Delhi', coordinator: 'Dr. Rajesh Kumar', email: 'placement@iitd.ac.in', phone: '+91 11 2659 1111', visitDate: '2026-02-15', status: 'scheduled', slots: 50 },
-    { id: 2, name: 'BITS Pilani', location: 'Pilani, Rajasthan', coordinator: 'Prof. Meera Sharma', email: 'placements@bits-pilani.ac.in', phone: '+91 1596 245073', visitDate: '2026-02-20', status: 'scheduled', slots: 40 },
-    { id: 3, name: 'IIT Bombay', location: 'Mumbai', coordinator: 'Dr. Anil Patil', email: 'placement@iitb.ac.in', phone: '+91 22 2576 4999', visitDate: '2026-01-18', status: 'completed', slots: 60 },
-    { id: 4, name: 'NIT Trichy', location: 'Tiruchirappalli', coordinator: 'Ms. Priya Reddy', email: 'placements@nitt.edu', phone: '+91 431 250 3000', visitDate: '2026-02-28', status: 'scheduled', slots: 35 },
-    { id: 5, name: 'VIT Vellore', location: 'Vellore, Tamil Nadu', coordinator: 'Dr. Suresh Babu', email: 'placements@vit.ac.in', phone: '+91 416 220 2020', visitDate: '2026-01-10', status: 'completed', slots: 45 },
-  ]);
+  const [colleges, setColleges] = useState([]);
+
+  useEffect(() => {
+    fetchColleges();
+  }, []);
+
+  const fetchColleges = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await api.getColleges();
+      setColleges(data);
+    } catch (error) {
+      console.error('Error fetching colleges:', error);
+      setError('Failed to load colleges. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const [formData, setFormData] = useState({
     name: '',
@@ -25,6 +41,7 @@ const Colleges = () => {
     phone: '',
     visitDate: '',
     slots: '',
+    status: 'SCHEDULED',
     notes: ''
   });
 
@@ -35,20 +52,68 @@ const Colleges = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const newCollege = {
-      id: colleges.length + 1,
-      ...formData,
-      status: 'scheduled'
-    };
-    setColleges([...colleges, newCollege]);
-    setShowModal(false);
-    setFormData({ name: '', location: '', coordinator: '', email: '', phone: '', visitDate: '', slots: '', notes: '' });
+    try {
+      if (editingCollege) {
+        await api.updateCollege(editingCollege.id, formData);
+      } else {
+        await api.createCollege(formData);
+      }
+      await fetchColleges();
+      setShowModal(false);
+      setEditingCollege(null);
+      setFormData({ name: '', location: '', coordinator: '', email: '', phone: '', visitDate: '', slots: '', status: 'SCHEDULED', notes: '' });
+    } catch (error) {
+      console.error('Error saving college:', error);
+      alert('Failed to save college. Please try again.');
+    }
+  };
+
+  const handleEdit = (college) => {
+    setEditingCollege(college);
+    setFormData({
+      name: college.name,
+      location: college.location,
+      coordinator: college.coordinator || '',
+      email: college.email || '',
+      phone: college.phone || '',
+      visitDate: college.visitDate || '',
+      slots: college.slots || '',
+      status: college.status || 'SCHEDULED',
+      notes: college.notes || ''
+    });
+    setShowModal(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this college?')) {
+      try {
+        await api.deleteCollege(id);
+        await fetchColleges();
+      } catch (error) {
+        console.error('Error deleting college:', error);
+        alert('Failed to delete college. Please try again.');
+      }
+    }
   };
 
   const getStatusBadge = (status) => {
-    return status === 'completed' ? 'badge-success' : 'badge-warning';
+    const statusMap = {
+      'SCHEDULED': 'badge-info',
+      'COMPLETED': 'badge-success',
+      'CANCELLED': 'badge-danger'
+    };
+    return statusMap[status] || 'badge-secondary';
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Not scheduled';
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   const filteredColleges = colleges.filter(college => {
@@ -57,6 +122,22 @@ const Colleges = () => {
     const matchesFilter = filterStatus === 'all' || college.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
+
+  if (loading) {
+    return (
+      <div className="dashboard-container">
+        <Sidebar />
+        <main className="main-content">
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
+              <div style={{ fontSize: '18px', color: '#666' }}>Loading colleges...</div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-container">
@@ -99,8 +180,9 @@ const Colleges = () => {
                 className="form-input"
               >
                 <option value="all">All</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="completed">Completed</option>
+                <option value="PLANNED">Planned</option>
+                <option value="VISITED">Visited</option>
+                <option value="PARTNERSHIP_SIGNED">Partnership Signed</option>
               </select>
             </div>
           </div>
@@ -108,12 +190,25 @@ const Colleges = () => {
 
         {/* Colleges Grid */}
         <div className="colleges-grid">
-          {filteredColleges.map(college => (
+          {error && (
+            <div style={{ padding: '40px', textAlign: 'center', color: '#e74c3c' }}>
+              {error}
+              <button onClick={fetchColleges} className="btn btn-outline" style={{ marginLeft: '12px' }}>
+                Retry
+              </button>
+            </div>
+          )}
+          {!error && filteredColleges.length === 0 && (
+            <div style={{ padding: '40px', textAlign: 'center', color: '#999', gridColumn: '1 / -1' }}>
+              No colleges found. Add your first college to get started!
+            </div>
+          )}
+          {!error && filteredColleges.map(college => (
             <div key={college.id} className="college-card fade-in">
               <div className="college-header">
                 <div className="college-icon">🏫</div>
                 <span className={`badge ${getStatusBadge(college.status)}`}>
-                  {college.status === 'completed' ? '✓ Completed' : '📅 Scheduled'}
+                  {college.status === 'COMPLETED' ? '✓ Completed' : college.status === 'CANCELLED' ? '✗ Cancelled' : '📅 Scheduled'}
                 </span>
               </div>
               
@@ -123,35 +218,39 @@ const Colleges = () => {
               <div className="college-details">
                 <div className="detail-item">
                   <span className="detail-label">Coordinator:</span>
-                  <span className="detail-value">{college.coordinator}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Visit Date:</span>
-                  <span className="detail-value">{college.visitDate}</span>
+                  <span className="detail-value">{college.coordinator || 'Not assigned'}</span>
                 </div>
                 <div className="detail-item">
                   <span className="detail-label">Available Slots:</span>
-                  <span className="detail-value">{college.slots} students</span>
+                  <span className="detail-value">{college.slots || 0}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Visit Date:</span>
+                  <span className="detail-value">{formatDate(college.visitDate)}</span>
                 </div>
               </div>
 
               <div className="college-contact">
-                <div className="contact-item">
-                  <span>📧</span>
-                  <span>{college.email}</span>
-                </div>
-                <div className="contact-item">
-                  <span>📞</span>
-                  <span>{college.phone}</span>
-                </div>
+                {college.email && (
+                  <div className="contact-item">
+                    <span>📧</span>
+                    <span>{college.email}</span>
+                  </div>
+                )}
+                {college.phone && (
+                  <div className="contact-item">
+                    <span>📞</span>
+                    <span>{college.phone}</span>
+                  </div>
+                )}
               </div>
 
               <div className="college-actions">
-                <button className="btn btn-outline btn-sm">
+                <button className="btn btn-outline btn-sm" onClick={() => handleEdit(college)}>
                   ✏️ Edit
                 </button>
-                <button className="btn btn-primary btn-sm">
-                  👁️ View Details
+                <button className="btn btn-danger btn-sm" onClick={() => handleDelete(college.id)}>
+                  🗑️ Delete
                 </button>
               </div>
             </div>
@@ -163,8 +262,12 @@ const Colleges = () => {
           <div className="modal-overlay" onClick={() => setShowModal(false)}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h2>Add College Visit</h2>
-                <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
+                <h2>{editingCollege ? 'Edit College' : 'Add College Visit'}</h2>
+                <button className="modal-close" onClick={() => {
+                  setShowModal(false);
+                  setEditingCollege(null);
+                  setFormData({ name: '', location: '', coordinator: '', email: '', phone: '', visitDate: '', slots: '', status: 'SCHEDULED', notes: '' });
+                }}>✕</button>
               </div>
               
               <form onSubmit={handleSubmit}>
@@ -195,7 +298,7 @@ const Colleges = () => {
 
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Coordinator Name *</label>
+                    <label className="form-label">Coordinator *</label>
                     <input
                       type="text"
                       name="coordinator"
@@ -243,16 +346,33 @@ const Colleges = () => {
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label">Available Slots *</label>
-                  <input
-                    type="number"
-                    name="slots"
-                    className="form-input"
-                    value={formData.slots}
-                    onChange={handleInputChange}
-                    required
-                  />
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Available Slots *</label>
+                    <input
+                      type="number"
+                      name="slots"
+                      className="form-input"
+                      value={formData.slots}
+                      onChange={handleInputChange}
+                      required
+                      min="0"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Status *</label>
+                    <select
+                      name="status"
+                      className="form-input"
+                      value={formData.status}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      <option value="SCHEDULED">Scheduled</option>
+                      <option value="COMPLETED">Completed</option>
+                      <option value="CANCELLED">Cancelled</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div className="form-group">
@@ -267,11 +387,15 @@ const Colleges = () => {
                 </div>
 
                 <div className="modal-actions">
-                  <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)}>
+                  <button type="button" className="btn btn-outline" onClick={() => {
+                    setShowModal(false);
+                    setEditingCollege(null);
+                    setFormData({ name: '', location: '', coordinator: '', email: '', phone: '', visitDate: '', slots: '', status: 'SCHEDULED', notes: '' });
+                  }}>
                     Cancel
                   </button>
                   <button type="submit" className="btn btn-primary">
-                    Add College Visit
+                    {editingCollege ? 'Update College' : 'Add College'}
                   </button>
                 </div>
               </form>

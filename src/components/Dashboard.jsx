@@ -1,10 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../services/api';
 import './Dashboard.css';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalColleges: 0,
+    totalInterns: 0,
+    totalOffers: 0,
+    activeInterns: 0
+  });
+  const [recentInterns, setRecentInterns] = useState([]);
+  const [upcomingVisits, setUpcomingVisits] = useState([]);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -12,39 +22,73 @@ const Dashboard = () => {
       navigate('/login');
     } else {
       setUser(JSON.parse(userData));
+      fetchDashboardData();
     }
   }, [navigate]);
 
-  const stats = [
-    { title: 'Total Interns', value: '145', change: '+12%', icon: '👥', color: '#3b82f6' },
-    { title: 'Active Onboarding', value: '28', change: '+5', icon: '📋', color: '#10b981' },
-    { title: 'Colleges Visited', value: '32', change: '+3', icon: '🏫', color: '#f59e0b' },
-    { title: 'Offers Generated', value: '89', change: '+18', icon: '📄', color: '#8b5cf6' },
-  ];
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch dashboard stats
+      const dashboardStats = await api.getDashboardStats();
+      setStats(dashboardStats);
 
-  const recentInterns = [
-    { id: 1, name: 'Rahul Sharma', college: 'IIT Delhi', status: 'Document Verification', date: '2026-01-15' },
-    { id: 2, name: 'Priya Patel', college: 'BITS Pilani', status: 'Offer Generated', date: '2026-01-14' },
-    { id: 3, name: 'Amit Kumar', college: 'NIT Trichy', status: 'Onboarding', date: '2026-01-13' },
-    { id: 4, name: 'Sneha Reddy', college: 'VIT Vellore', status: 'Interview Scheduled', date: '2026-01-12' },
-    { id: 5, name: 'Vikram Singh', college: 'IIT Bombay', status: 'Document Pending', date: '2026-01-11' },
-  ];
+      // Fetch recent interns (limit to 5)
+      const allInterns = await api.getInterns();
+      const sortedInterns = allInterns
+        .sort((a, b) => new Date(b.appliedDate || b.createdAt) - new Date(a.appliedDate || a.createdAt))
+        .slice(0, 5);
+      setRecentInterns(sortedInterns);
 
-  const upcomingVisits = [
-    { college: 'IIT Madras', date: '2026-01-25', coordinator: 'Dr. Agarwal', slots: 50 },
-    { college: 'Anna University', date: '2026-01-28', coordinator: 'Prof. Menon', slots: 40 },
-    { college: 'SRM Institute', date: '2026-02-02', coordinator: 'Ms. Priya', slots: 60 },
+      // Fetch upcoming college visits
+      const colleges = await api.getColleges();
+      const plannedColleges = colleges
+        .filter(c => c.status === 'SCHEDULED' && c.visitDate)
+        .sort((a, b) => new Date(a.visitDate) - new Date(b.visitDate))
+        .slice(0, 3);
+      setUpcomingVisits(plannedColleges);
+
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const displayStats = [
+    { title: 'Total Interns', value: stats.totalInterns || '0', change: '+12%', icon: '👥', color: '#3b82f6' },
+    { title: 'Active Interns', value: stats.activeInterns || '0', change: '+5', icon: '📋', color: '#10b981' },
+    { title: 'Total Colleges', value: stats.totalColleges || '0', change: '+3', icon: '🏫', color: '#f59e0b' },
+    { title: 'Offers Generated', value: stats.totalOffers || '0', change: '+18', icon: '📄', color: '#8b5cf6' },
   ];
 
   const getStatusBadge = (status) => {
     const statusMap = {
-      'Document Verification': 'badge-warning',
-      'Offer Generated': 'badge-success',
-      'Onboarding': 'badge-info',
-      'Interview Scheduled': 'badge-secondary',
-      'Document Pending': 'badge-danger'
+      'DOCUMENT_PENDING': 'badge-danger',
+      'DOCUMENT_VERIFICATION': 'badge-warning',
+      'DOCUMENT_VERIFIED': 'badge-success',
+      'INTERVIEW_SCHEDULED': 'badge-info',
+      'OFFER_GENERATED': 'badge-success',
+      'ONBOARDING': 'badge-info',
+      'ACTIVE': 'badge-success',
+      'COMPLETED': 'badge-secondary',
+      'TERMINATED': 'badge-danger'
     };
     return statusMap[status] || 'badge-secondary';
+  };
+
+  const formatStatus = (status) => {
+    return status.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   const handleLogout = () => {
@@ -53,6 +97,19 @@ const Dashboard = () => {
   };
 
   if (!user) return null;
+
+  if (loading) {
+    return (
+      <div className="dashboard-container">
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
+            <div style={{ fontSize: '18px', color: '#666' }}>Loading dashboard...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-container">
@@ -129,7 +186,7 @@ const Dashboard = () => {
 
         {/* Stats Grid */}
         <div className="stats-grid">
-          {stats.map((stat, index) => (
+          {displayStats.map((stat, index) => (
             <div key={index} className="stat-card fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
               <div className="stat-icon" style={{ backgroundColor: `${stat.color}20` }}>
                 <span style={{ fontSize: '32px' }}>{stat.icon}</span>
@@ -158,21 +215,38 @@ const Dashboard = () => {
                     <th>College</th>
                     <th>Status</th>
                     <th>Date Added</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {recentInterns.map(intern => (
-                    <tr key={intern.id}>
-                      <td><strong>{intern.name}</strong></td>
-                      <td>{intern.college}</td>
-                      <td>
-                        <span className={`badge ${getStatusBadge(intern.status)}`}>
-                          {intern.status}
-                        </span>
+                  {recentInterns.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
+                        No interns found. Add your first intern to get started!
                       </td>
-                      <td>{intern.date}</td>
                     </tr>
-                  ))}
+                  ) : (
+                    recentInterns.map(intern => (
+                      <tr key={intern.id}>
+                        <td><strong>{intern.name}</strong></td>
+                        <td>{intern.collegeName || 'N/A'}</td>
+                        <td>
+                          <span className={`badge ${getStatusBadge(intern.status)}`}>
+                            {formatStatus(intern.status)}
+                          </span>
+                        </td>
+                        <td>{formatDate(intern.appliedDate || intern.createdAt)}</td>
+                        <td>
+                          <button 
+                            className="btn btn-outline btn-sm" 
+                            onClick={() => navigate('/interns')}
+                          >
+                            Edit
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -185,22 +259,28 @@ const Dashboard = () => {
               <a href="#" onClick={(e) => { e.preventDefault(); navigate('/colleges'); }} className="view-all-link">Manage →</a>
             </div>
             <div className="visits-list">
-              {upcomingVisits.map((visit, index) => (
-                <div key={index} className="visit-item">
-                  <div className="visit-icon">🏫</div>
-                  <div className="visit-details">
-                    <div className="visit-college">{visit.college}</div>
-                    <div className="visit-meta">
-                      <span>📅 {visit.date}</span>
-                      <span>•</span>
-                      <span>👤 {visit.coordinator}</span>
-                      <span>•</span>
-                      <span>🪑 {visit.slots} slots</span>
-                    </div>
-                  </div>
-                  <button className="btn btn-outline btn-sm">Details</button>
+              {upcomingVisits.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
+                  No upcoming visits scheduled
                 </div>
-              ))}
+              ) : (
+                upcomingVisits.map((visit, index) => (
+                  <div key={index} className="visit-item">
+                    <div className="visit-icon">🏫</div>
+                    <div className="visit-details">
+                      <div className="visit-college">{visit.name}</div>
+                      <div className="visit-meta">
+                        <span>📅 {formatDate(visit.visitDate)}</span>
+                        <span>•</span>
+                        <span>👤 {visit.coordinator || 'TBA'}</span>
+                        <span>•</span>
+                        <span>📍 {visit.location}</span>
+                      </div>
+                    </div>
+                    <button className="btn btn-outline btn-sm" onClick={() => navigate('/colleges')}>Details</button>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

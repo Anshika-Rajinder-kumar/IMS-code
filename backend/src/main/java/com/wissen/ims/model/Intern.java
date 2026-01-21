@@ -1,0 +1,78 @@
+package com.wissen.ims.model;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "interns")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@EntityListeners(AuditingEntityListener.class)
+public class Intern {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
+    private String name;
+
+    @Column(nullable = false, unique = true)
+    private String email;
+
+    @Column(nullable = false)
+    private String phone;
+
+    private String emergencyContact;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "college_id")
+    private College college;
+
+    @Column(nullable = false)
+    private String collegeName;
+
+    @Column(nullable = false)
+    private String branch;
+
+    @Column(nullable = false)
+    private String cgpa;
+
+    @Column(nullable = false)
+    private LocalDate joinDate;
+
+    @Column(length = 500)
+    private String address;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private InternStatus status = InternStatus.DOCUMENT_PENDING;
+
+    @CreatedDate
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @LastModifiedDate
+    private LocalDateTime updatedAt;
+
+    public enum InternStatus {
+        DOCUMENT_PENDING,
+        DOCUMENT_VERIFICATION,
+        DOCUMENT_VERIFIED,
+        INTERVIEW_SCHEDULED,
+        OFFER_GENERATED,
+        ONBOARDING,
+        ACTIVE,
+        COMPLETED,
+        TERMINATED
+    }
+}

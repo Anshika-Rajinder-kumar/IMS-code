@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
+import api from '../services/api';
 import './Interns.css';
 
 const Interns = () => {
@@ -9,27 +10,48 @@ const Interns = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [editingIntern, setEditingIntern] = useState(null);
 
-  const [interns, setInterns] = useState([
-    { id: 1, name: 'Rahul Sharma', email: 'rahul.sharma@example.com', phone: '+91 98765 43210', college: 'IIT Delhi', branch: 'Computer Science', cgpa: '8.5', status: 'Document Verification', joinDate: '2026-02-01', photo: '👨‍💼' },
-    { id: 2, name: 'Priya Patel', email: 'priya.patel@example.com', phone: '+91 98765 43211', college: 'BITS Pilani', branch: 'Electronics', cgpa: '9.2', status: 'Offer Generated', joinDate: '2026-02-15', photo: '👩‍💼' },
-    { id: 3, name: 'Amit Kumar', email: 'amit.kumar@example.com', phone: '+91 98765 43212', college: 'NIT Trichy', branch: 'Mechanical', cgpa: '8.8', status: 'Onboarding', joinDate: '2026-01-20', photo: '👨‍💼' },
-    { id: 4, name: 'Sneha Reddy', email: 'sneha.reddy@example.com', phone: '+91 98765 43213', college: 'VIT Vellore', branch: 'Information Technology', cgpa: '9.0', status: 'Interview Scheduled', joinDate: '2026-03-01', photo: '👩‍💼' },
-    { id: 5, name: 'Vikram Singh', email: 'vikram.singh@example.com', phone: '+91 98765 43214', college: 'IIT Bombay', branch: 'Computer Science', cgpa: '8.7', status: 'Document Pending', joinDate: '2026-02-20', photo: '👨‍💼' },
-    { id: 6, name: 'Ananya Menon', email: 'ananya.menon@example.com', phone: '+91 98765 43215', college: 'IIT Madras', branch: 'Civil Engineering', cgpa: '8.4', status: 'Active', joinDate: '2026-01-15', photo: '👩‍💼' },
-  ]);
+  const [interns, setInterns] = useState([]);
 
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
-    college: '',
+    collegeName: '',
     branch: '',
     cgpa: '',
     joinDate: '',
     address: '',
-    emergencyContact: ''
+    emergencyContact: '',
+    status: 'DOCUMENT_PENDING'
   });
+
+  useEffect(() => {
+    // Check if user is authenticated
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+    fetchInterns();
+  }, [navigate]);
+
+  const fetchInterns = async () => {
+    try {
+      setLoading(true);
+      const data = await api.get('/interns');
+      setInterns(data);
+      setError('');
+    } catch (err) {
+      setError('Failed to fetch interns');
+      console.error('Error fetching interns:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     setFormData({
@@ -38,34 +60,84 @@ const Interns = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const newIntern = {
-      id: interns.length + 1,
-      ...formData,
-      status: 'Document Pending',
-      photo: formData.name.toLowerCase().includes('a') ? '👩‍💼' : '👨‍💼'
-    };
-    setInterns([...interns, newIntern]);
-    setShowModal(false);
-    setFormData({ name: '', email: '', phone: '', college: '', branch: '', cgpa: '', joinDate: '', address: '', emergencyContact: '' });
+    try {
+      setLoading(true);
+      // Convert cgpa to number
+      const dataToSend = {
+        ...formData,
+        cgpa: formData.cgpa ? parseFloat(formData.cgpa) : null
+      };
+      if (editingIntern) {
+        await api.put(`/interns/${editingIntern.id}`, dataToSend);
+      } else {
+        await api.post('/interns', dataToSend);
+      }
+      await fetchInterns();
+      setShowModal(false);
+      setEditingIntern(null);
+      setFormData({ name: '', email: '', phone: '', collegeName: '', branch: '', cgpa: '', joinDate: '', address: '', emergencyContact: '', status: 'DOCUMENT_PENDING' });
+      setError('');
+    } catch (err) {
+      setError(editingIntern ? 'Failed to update intern' : 'Failed to create intern');
+      console.error('Error saving intern:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEdit = (intern) => {
+    setEditingIntern(intern);
+    setFormData({
+      name: intern.name,
+      email: intern.email,
+      phone: intern.phone,
+      collegeName: intern.collegeName || '',
+      branch: intern.branch || '',
+      cgpa: intern.cgpa || '',
+      joinDate: intern.joinDate || '',
+      address: intern.address || '',
+      emergencyContact: intern.emergencyContact || '',
+      status: intern.status
+    });
+    setShowModal(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this intern?')) {
+      try {
+        await api.delete(`/interns/${id}`);
+        await fetchInterns();
+      } catch (err) {
+        console.error('Error deleting intern:', err);
+        alert('Failed to delete intern');
+      }
+    }
   };
 
   const getStatusBadge = (status) => {
     const statusMap = {
-      'Document Verification': 'badge-warning',
-      'Offer Generated': 'badge-success',
-      'Onboarding': 'badge-info',
-      'Interview Scheduled': 'badge-secondary',
-      'Document Pending': 'badge-danger',
-      'Active': 'badge-success'
+      'DOCUMENT_PENDING': 'badge-danger',
+      'DOCUMENT_VERIFICATION': 'badge-warning',
+      'DOCUMENT_VERIFIED': 'badge-success',
+      'INTERVIEW_SCHEDULED': 'badge-secondary',
+      'OFFER_GENERATED': 'badge-success',
+      'ONBOARDING': 'badge-info',
+      'ACTIVE': 'badge-success',
+      'COMPLETED': 'badge-info',
+      'TERMINATED': 'badge-secondary'
     };
     return statusMap[status] || 'badge-secondary';
   };
 
+  const formatStatus = (status) => {
+    return status.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+  };
+
   const filteredInterns = interns.filter(intern => {
     const matchesSearch = intern.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         intern.college.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (intern.collegeName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                          intern.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === 'all' || intern.status === filterStatus;
     return matchesSearch && matchesFilter;
@@ -103,25 +175,37 @@ const Interns = () => {
           <div className="stat-item">
             <span className="stat-icon">✅</span>
             <div>
-              <div className="stat-number">{interns.filter(i => i.status === 'Active').length}</div>
+              <div className="stat-number">{interns.filter(i => i.status === 'ACTIVE').length}</div>
               <div className="stat-label">Active</div>
             </div>
           </div>
           <div className="stat-item">
             <span className="stat-icon">📋</span>
             <div>
-              <div className="stat-number">{interns.filter(i => i.status === 'Onboarding').length}</div>
+              <div className="stat-number">{interns.filter(i => i.status === 'ONBOARDING').length}</div>
               <div className="stat-label">Onboarding</div>
             </div>
           </div>
           <div className="stat-item">
             <span className="stat-icon">⏳</span>
             <div>
-              <div className="stat-number">{interns.filter(i => i.status === 'Document Pending').length}</div>
+              <div className="stat-number">{interns.filter(i => i.status === 'DOCUMENT_PENDING').length}</div>
               <div className="stat-label">Pending</div>
             </div>
           </div>
         </div>
+
+        {error && (
+          <div style={{ padding: '12px', background: '#fee', color: '#c33', borderRadius: '8px', marginBottom: '24px' }}>
+            {error}
+          </div>
+        )}
+
+        {loading && (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            Loading...
+          </div>
+        )}
 
         {/* Filters and View Toggle */}
         <div className="card" style={{ marginBottom: '24px' }}>
@@ -144,12 +228,15 @@ const Interns = () => {
                 className="form-input"
               >
                 <option value="all">All Status</option>
-                <option value="Active">Active</option>
-                <option value="Onboarding">Onboarding</option>
-                <option value="Document Verification">Document Verification</option>
-                <option value="Offer Generated">Offer Generated</option>
-                <option value="Interview Scheduled">Interview Scheduled</option>
-                <option value="Document Pending">Document Pending</option>
+                <option value="DOCUMENT_PENDING">Document Pending</option>
+                <option value="DOCUMENT_VERIFICATION">Document Verification</option>
+                <option value="DOCUMENT_VERIFIED">Document Verified</option>
+                <option value="INTERVIEW_SCHEDULED">Interview Scheduled</option>
+                <option value="OFFER_GENERATED">Offer Generated</option>
+                <option value="ONBOARDING">Onboarding</option>
+                <option value="ACTIVE">Active</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="TERMINATED">Terminated</option>
               </select>
             </div>
             <div className="view-toggle">
@@ -170,35 +257,35 @@ const Interns = () => {
         </div>
 
         {/* Grid View */}
-        {viewMode === 'grid' && (
+        {viewMode === 'grid' && !loading && (
           <div className="interns-grid">
             {filteredInterns.map(intern => (
               <div key={intern.id} className="intern-card fade-in">
                 <div className="intern-photo">
-                  <span style={{ fontSize: '48px' }}>{intern.photo}</span>
+                  <span style={{ fontSize: '48px' }}>{intern.name.toLowerCase().includes('a') ? '👩‍💼' : '👨‍💼'}</span>
                 </div>
                 
                 <h3 className="intern-name">{intern.name}</h3>
-                <p className="intern-college">{intern.college}</p>
+                <p className="intern-college">{intern.collegeName || 'N/A'}</p>
                 
                 <div className="intern-badge-container">
                   <span className={`badge ${getStatusBadge(intern.status)}`}>
-                    {intern.status}
+                    {formatStatus(intern.status)}
                   </span>
                 </div>
 
                 <div className="intern-details">
                   <div className="detail-row">
                     <span className="detail-icon">🎓</span>
-                    <span>{intern.branch}</span>
+                    <span>{intern.branch || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
                     <span className="detail-icon">📊</span>
-                    <span>CGPA: {intern.cgpa}</span>
+                    <span>CGPA: {intern.cgpa || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
                     <span className="detail-icon">📅</span>
-                    <span>{intern.joinDate}</span>
+                    <span>{intern.joinDate || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
                     <span className="detail-icon">📧</span>
@@ -207,11 +294,11 @@ const Interns = () => {
                 </div>
 
                 <div className="intern-actions">
-                  <button className="btn btn-outline btn-sm" onClick={() => navigate(`/documents`)}>
-                    📁 Documents
+                  <button className="btn btn-outline btn-sm" onClick={() => handleEdit(intern)}>
+                    ✏️ Edit
                   </button>
-                  <button className="btn btn-primary btn-sm">
-                    👁️ View
+                  <button className="btn btn-primary btn-sm" onClick={() => navigate(`/documents`)}>
+                    📁 Documents
                   </button>
                 </div>
               </div>
@@ -220,7 +307,7 @@ const Interns = () => {
         )}
 
         {/* List View */}
-        {viewMode === 'list' && (
+        {viewMode === 'list' && !loading && (
           <div className="card">
             <div className="table-container">
               <table>
@@ -240,26 +327,26 @@ const Interns = () => {
                     <tr key={intern.id}>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <span style={{ fontSize: '24px' }}>{intern.photo}</span>
+                          <span style={{ fontSize: '24px' }}>{intern.name.toLowerCase().includes('a') ? '👩‍💼' : '👨‍💼'}</span>
                           <div>
                             <strong>{intern.name}</strong>
                             <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{intern.email}</div>
                           </div>
                         </div>
                       </td>
-                      <td>{intern.college}</td>
-                      <td>{intern.branch}</td>
-                      <td><strong>{intern.cgpa}</strong></td>
+                      <td>{intern.collegeName || 'N/A'}</td>
+                      <td>{intern.branch || 'N/A'}</td>
+                      <td><strong>{intern.cgpa || 'N/A'}</strong></td>
                       <td>
                         <span className={`badge ${getStatusBadge(intern.status)}`}>
-                          {intern.status}
+                          {formatStatus(intern.status)}
                         </span>
                       </td>
-                      <td>{intern.joinDate}</td>
+                      <td>{intern.joinDate || 'N/A'}</td>
                       <td>
                         <div style={{ display: 'flex', gap: '8px' }}>
-                          <button className="btn btn-outline btn-sm">Edit</button>
-                          <button className="btn btn-primary btn-sm" onClick={() => navigate(`/documents`)}>View</button>
+                          <button className="btn btn-outline btn-sm" onClick={() => handleEdit(intern)}>Edit</button>
+                          <button className="btn btn-primary btn-sm" onClick={() => navigate(`/documents`)}>Documents</button>
                         </div>
                       </td>
                     </tr>
@@ -272,11 +359,17 @@ const Interns = () => {
 
         {/* Add Intern Modal */}
         {showModal && (
-          <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="modal-overlay" onClick={() => {
+            setShowModal(false);
+            setEditingIntern(null);
+          }}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h2>Add New Intern</h2>
-                <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
+                <h2>{editingIntern ? 'Edit Intern' : 'Add New Intern'}</h2>
+                <button className="modal-close" onClick={() => {
+                  setShowModal(false);
+                  setEditingIntern(null);
+                }}>✕</button>
               </div>
               
               <form onSubmit={handleSubmit}>
@@ -334,9 +427,9 @@ const Interns = () => {
                     <label className="form-label">College *</label>
                     <input
                       type="text"
-                      name="college"
+                      name="collegeName"
                       className="form-input"
-                      value={formData.college}
+                      value={formData.collegeName}
                       onChange={handleInputChange}
                       required
                     />
@@ -379,6 +472,29 @@ const Interns = () => {
                   </div>
                 </div>
 
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Status *</label>
+                    <select
+                      name="status"
+                      className="form-input"
+                      value={formData.status}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      <option value="DOCUMENT_PENDING">Document Pending</option>
+                      <option value="DOCUMENT_VERIFICATION">Document Verification</option>
+                      <option value="DOCUMENT_VERIFIED">Document Verified</option>
+                      <option value="INTERVIEW_SCHEDULED">Interview Scheduled</option>
+                      <option value="OFFER_GENERATED">Offer Generated</option>
+                      <option value="ONBOARDING">Onboarding</option>
+                      <option value="ACTIVE">Active</option>
+                      <option value="COMPLETED">Completed</option>
+                      <option value="TERMINATED">Terminated</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div className="form-group">
                   <label className="form-label">Address</label>
                   <textarea
@@ -391,11 +507,14 @@ const Interns = () => {
                 </div>
 
                 <div className="modal-actions">
-                  <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)}>
+                  <button type="button" className="btn btn-outline" onClick={() => {
+                    setShowModal(false);
+                    setEditingIntern(null);
+                  }}>
                     Cancel
                   </button>
                   <button type="submit" className="btn btn-primary">
-                    Add Intern
+                    {editingIntern ? 'Update Intern' : 'Add Intern'}
                   </button>
                 </div>
               </form>
