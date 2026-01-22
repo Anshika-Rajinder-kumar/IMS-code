@@ -25,6 +25,39 @@ const Sidebar = () => {
 
   if (!user) return null;
 
+  // Role-based navigation items
+  const getNavigationItems = () => {
+    const userType = user.userType?.toUpperCase();
+    
+    if (userType === 'ADMIN' || userType === 'HR') {
+      return [
+        { path: '/dashboard', icon: '📊', label: 'Dashboard' },
+        { path: '/colleges', icon: '🏫', label: 'Colleges' },
+        { path: '/hiring-rounds', icon: '🎯', label: 'Hiring Rounds' },
+        { path: '/interns', icon: '👥', label: 'Interns' },
+        { path: '/documents', icon: '📁', label: 'Documents' },
+        { path: '/offers', icon: '📄', label: 'Offer Letters' },
+        { path: '/reports', icon: '📈', label: 'Reports' },
+        { path: '/settings', icon: '⚙️', label: 'Settings' }
+      ];
+    } else if (userType === 'COLLEGE') {
+      return [
+        { path: '/students', icon: '👨‍🎓', label: 'Students' },
+        { path: '/hiring-status', icon: '📋', label: 'Hiring Status' },
+        { path: '/settings', icon: '⚙️', label: 'Settings' }
+      ];
+    } else if (userType === 'INTERN') {
+      return [
+        { path: '/learning', icon: '📚', label: 'My Learning' },
+        { path: '/documents', icon: '📁', label: 'My Documents' },
+        { path: '/offer', icon: '📄', label: 'My Offer' },
+        { path: '/settings', icon: '⚙️', label: 'Settings' }
+      ];
+    }
+    
+    return [];
+  };
+
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
@@ -35,34 +68,17 @@ const Sidebar = () => {
       </div>
 
       <nav className="sidebar-nav">
-        <a href="#" onClick={(e) => { e.preventDefault(); navigate('/dashboard'); }} className={`nav-item ${isActive('/dashboard')}`}>
-          <span className="nav-icon">📊</span>
-          <span>Dashboard</span>
-        </a>
-        <a href="#" onClick={(e) => { e.preventDefault(); navigate('/colleges'); }} className={`nav-item ${isActive('/colleges')}`}>
-          <span className="nav-icon">🏫</span>
-          <span>Colleges</span>
-        </a>
-        <a href="#" onClick={(e) => { e.preventDefault(); navigate('/interns'); }} className={`nav-item ${isActive('/interns')}`}>
-          <span className="nav-icon">👥</span>
-          <span>Interns</span>
-        </a>
-        <a href="#" onClick={(e) => { e.preventDefault(); navigate('/documents'); }} className={`nav-item ${isActive('/documents')}`}>
-          <span className="nav-icon">📁</span>
-          <span>Documents</span>
-        </a>
-        <a href="#" onClick={(e) => { e.preventDefault(); navigate('/offers'); }} className={`nav-item ${isActive('/offers')}`}>
-          <span className="nav-icon">📄</span>
-          <span>Offer Letters</span>
-        </a>
-        <a href="#" className="nav-item">
-          <span className="nav-icon">📈</span>
-          <span>Reports</span>
-        </a>
-        <a href="#" className="nav-item">
-          <span className="nav-icon">⚙️</span>
-          <span>Settings</span>
-        </a>
+        {getNavigationItems().map((item) => (
+          <a 
+            key={item.path}
+            href="#" 
+            onClick={(e) => { e.preventDefault(); navigate(item.path); }} 
+            className={`nav-item ${isActive(item.path)}`}
+          >
+            <span className="nav-icon">{item.icon}</span>
+            <span>{item.label}</span>
+          </a>
+        ))}
       </nav>
 
       <div className="sidebar-footer">
