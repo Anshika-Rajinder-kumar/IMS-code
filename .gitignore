@@ -65,3 +65,4 @@ logs/
 
 # Maven
 .m2/
+test-results
