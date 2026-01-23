@@ -21,6 +21,7 @@ function Candidates() {
   });
   const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [resumeFile, setResumeFile] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [selectedCandidates, setSelectedCandidates] = useState([]);
@@ -65,6 +66,10 @@ function Candidates() {
         collegeName: selectedCollege ? selectedCollege.name : ''
       }));
     }
+
+    if (e.target.type === 'file') {
+      setResumeFile(e.target.files[0]);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -74,7 +79,7 @@ function Candidates() {
         await api.updateCandidate(editingId, formData);
         alert('Candidate updated successfully!');
       } else {
-        await api.createCandidate(formData);
+        await api.createCandidate(formData, resumeFile);
         alert('Candidate added successfully!');
       }
       resetForm();
@@ -180,12 +185,13 @@ function Candidates() {
     });
     setEditingId(null);
     setShowForm(false);
+    setResumeFile(null);
   };
 
   const filteredCandidates = candidates.filter(candidate => {
     const matchesSearch = candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         candidate.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         candidate.collegeName.toLowerCase().includes(searchTerm.toLowerCase());
+      candidate.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      candidate.collegeName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === 'ALL' || candidate.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
@@ -356,6 +362,16 @@ function Candidates() {
             </div>
 
             <div className="form-group full-width">
+              <label>Resume</label>
+              <input
+                type="file"
+                name="resume"
+                onChange={handleInputChange}
+                accept=".pdf,.doc,.docx"
+              />
+            </div>
+
+            <div className="form-group full-width">
               <label>Address</label>
               <textarea
                 name="address"
@@ -400,6 +416,7 @@ function Candidates() {
               <th>Branch</th>
               <th>CGPA</th>
               <th>Status</th>
+              <th>Resume</th>
               <th>Hiring Round</th>
               <th>Actions</th>
             </tr>
@@ -431,6 +448,19 @@ function Candidates() {
                     <span className={`status-badge ${getStatusBadgeClass(candidate.status)}`}>
                       {candidate.status.replace('_', ' ')}
                     </span>
+                  </td>
+                  <td>
+                    {candidate.resumePath ? (
+                      <button
+                        className="btn-edit"
+                        style={{ background: '#10b981', color: 'white', border: 'none' }}
+                        onClick={() => window.open(api.getCandidateResumeUrl(candidate.id), '_blank')}
+                      >
+                        Resume
+                      </button>
+                    ) : (
+                      'N/A'
+                    )}
                   </td>
                   <td>{candidate.hiringRound || 'N/A'}</td>
                   <td className="actions-cell">

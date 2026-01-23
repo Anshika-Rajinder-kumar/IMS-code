@@ -8,12 +8,20 @@ import com.wissen.ims.repository.InternRepository;
 import com.wissen.ims.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -33,6 +41,9 @@ public class CandidateService {
 
     @Autowired
     private EmailService emailService;
+
+    @Value("${file.upload-dir}")
+    private String uploadDir;
 
     private static final String CHAR_LOWERCASE = "abcdefghijklmnopqrstuvwxyz";
     private static final String CHAR_UPPERCASE = CHAR_LOWERCASE.toUpperCase();
@@ -63,32 +74,51 @@ public class CandidateService {
     }
 
     public List<Candidate> searchCandidates(String searchTerm) {
-        return candidateRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrCollegeNameContainingIgnoreCase(
-                searchTerm, searchTerm, searchTerm);
+        return candidateRepository
+                .findByNameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrCollegeNameContainingIgnoreCase(
+                        searchTerm, searchTerm, searchTerm);
     }
 
-    public Candidate createCandidate(Candidate candidate) {
+    public Candidate createCandidate(Candidate candidate, MultipartFile resume) throws IOException {
         if (candidateRepository.existsByEmail(candidate.getEmail())) {
             throw new RuntimeException("Candidate with this email already exists");
         }
-        
+
         // Check if user already exists with this email
         if (userRepository.existsByEmail(candidate.getEmail())) {
-            throw new RuntimeException("A user with email " + candidate.getEmail() + " already exists. Please use a different email.");
+            throw new RuntimeException(
+                    "A user with email " + candidate.getEmail() + " already exists. Please use a different email.");
         }
-        
-        // Save candidate first
-        Candidate savedCandidate = candidateRepository.save(candidate);
-        
-        // Note: We don't create user accounts for candidates yet
-        // User accounts will be created when they are converted to interns
-        
-        return savedCandidate;
+
+        // Handle resume upload if present
+        if (resume != null && !resume.isEmpty()) {
+            // Create upload directory if it doesn't exist
+            File uploadDirectory = new File(uploadDir);
+            if (!uploadDirectory.exists()) {
+                uploadDirectory.mkdirs();
+            }
+
+            // Generate unique filename
+            String originalFilename = resume.getOriginalFilename();
+            String extension = originalFilename != null ? originalFilename.substring(originalFilename.lastIndexOf("."))
+                    : "";
+            String filename = UUID.randomUUID().toString() + extension;
+
+            // Save file
+            Path filePath = Paths.get(uploadDir, filename);
+            Files.write(filePath, resume.getBytes());
+
+            candidate.setResumePath(filePath.toString());
+            candidate.setResumeName(originalFilename);
+        }
+
+        // Save candidate
+        return candidateRepository.save(candidate);
     }
 
     public Candidate updateCandidate(Long id, Candidate candidateDetails) {
         Candidate candidate = getCandidateById(id);
-        
+
         candidate.setName(candidateDetails.getName());
         candidate.setEmail(candidateDetails.getEmail());
         candidate.setPhone(candidateDetails.getPhone());
@@ -127,12 +157,12 @@ public class CandidateService {
      */
     public Intern convertCandidateToIntern(Long candidateId, LocalDate joinDate) {
         Candidate candidate = getCandidateById(candidateId);
-        
+
         // Check if already converted
         if (internRepository.existsByEmail(candidate.getEmail())) {
             throw new RuntimeException("This candidate has already been converted to intern");
         }
-        
+
         // Create intern from candidate
         Intern intern = new Intern();
         intern.setName(candidate.getName());
@@ -169,12 +199,12 @@ public class CandidateService {
         }
         intern.setHiringScore(candidate.getHiringScore());
         intern.setStatus(Intern.InternStatus.DOCUMENT_PENDING);
-        
+
         Intern savedIntern = internRepository.save(intern);
-        
+
         // Generate random password for intern user
         String generatedPassword = generateSecurePassword(12);
-        
+
         // Create user account for the intern
         User internUser = new User();
         internUser.setFullName(intern.getName());
@@ -183,38 +213,37 @@ public class CandidateService {
         internUser.setUserType(User.UserType.INTERN);
         internUser.setPhone(intern.getPhone());
         internUser.setActive(true);
-        
+
         userRepository.save(internUser);
-        
+
         // Send credentials via email
         emailService.sendInternCredentials(
-            intern.getEmail(),
-            intern.getName(),
-            intern.getEmail(),
-            generatedPassword
-        );
-        
+                intern.getEmail(),
+                intern.getName(),
+                intern.getEmail(),
+                generatedPassword);
+
         // Update candidate status to SELECTED
         candidate.setStatus(Candidate.CandidateStatus.SELECTED);
         candidateRepository.save(candidate);
-        
+
         return savedIntern;
     }
 
     private String generateSecurePassword(int length) {
         StringBuilder password = new StringBuilder(length);
-        
+
         // Ensure at least one of each required character type
         password.append(CHAR_LOWERCASE.charAt(random.nextInt(CHAR_LOWERCASE.length())));
         password.append(CHAR_UPPERCASE.charAt(random.nextInt(CHAR_UPPERCASE.length())));
         password.append(DIGIT.charAt(random.nextInt(DIGIT.length())));
         password.append(SPECIAL_CHAR.charAt(random.nextInt(SPECIAL_CHAR.length())));
-        
+
         // Fill the rest randomly
         for (int i = 4; i < length; i++) {
             password.append(PASSWORD_CHARS.charAt(random.nextInt(PASSWORD_CHARS.length())));
         }
-        
+
         // Shuffle the password characters
         return shuffleString(password.toString());
     }
