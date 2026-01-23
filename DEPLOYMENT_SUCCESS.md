@@ -59,7 +59,7 @@ Navigate to: http://localhost:3000
 Click: "Register"
 Fill in:
   - Name: Your Name
-  - Email: admin@wissen.com
+  - Email: your-email@domain.com
   - Password: YourSecurePassword
   - User Type: ADMIN
 ```
@@ -68,7 +68,7 @@ Fill in:
 
 After registration, login with your credentials:
 ```
-Email: admin@wissen.com
+Email: your-email@domain.com
 Password: YourSecurePassword
 ```
 

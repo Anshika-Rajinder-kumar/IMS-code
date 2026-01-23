@@ -32,8 +32,11 @@ const StudentUpload = () => {
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const data = await api.get('/interns');
-      // Filter students uploaded by this college
+      const userData = JSON.parse(localStorage.getItem('user'));
+      const collegeName = userData.collegeName;
+      
+      // Fetch candidates instead of interns
+      const data = await api.getCandidatesByCollegeName(collegeName);
       setStudents(data);
     } catch (err) {
       console.error('Error fetching students:', err);
@@ -57,36 +60,35 @@ const StudentUpload = () => {
       setLoading(true);
       setUploadProgress(20);
 
-      // Create student profile
-      const studentData = {
+      const userData = JSON.parse(localStorage.getItem('user'));
+      
+      // Get college ID from colleges list
+      const colleges = await api.getColleges();
+      const college = colleges.find(c => c.name === userData.collegeName);
+      
+      if (!college) {
+        throw new Error('College not found');
+      }
+
+      // Create candidate profile (not intern yet)
+      const candidateData = {
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
-        collegeName: user?.name || 'Unknown College',
+        collegeId: college.id,
+        collegeName: userData.collegeName,
         branch: formData.branch,
-        cgpa: parseFloat(formData.cgpa),
-        graduationYear: formData.graduationYear,
-        skills: formData.skills,
-        status: 'DOCUMENT_PENDING',
+        cgpa: formData.cgpa,
+        address: '',
+        emergencyContact: '',
+        status: 'APPLIED',
         hiringRound: 'Applied',
-        hiringStatus: 'PENDING'
+        hiringStatus: 'NOT_STARTED'
       };
 
       setUploadProgress(50);
-      const createdStudent = await api.post('/interns', studentData);
+      const createdCandidate = await api.createCandidate(candidateData);
       
-      // Upload resume if provided
-      if (formData.resumeFile) {
-        setUploadProgress(75);
-        const formDataUpload = new FormData();
-        formDataUpload.append('file', formData.resumeFile);
-        formDataUpload.append('internId', createdStudent.id);
-        formDataUpload.append('name', 'Resume');
-        formDataUpload.append('type', 'RESUME');
-        
-        await api.uploadFile('/documents/upload', formDataUpload);
-      }
-
       setUploadProgress(100);
       await fetchStudents();
       setShowModal(false);
@@ -100,10 +102,10 @@ const StudentUpload = () => {
         skills: '',
         resumeFile: null
       });
-      alert('Student uploaded successfully!');
+      alert('Student added successfully! They are now in the candidate pool.');
     } catch (err) {
       console.error('Error uploading student:', err);
-      alert('Failed to upload student: ' + err.message);
+      alert('Failed to upload student: ' + (err.response?.data?.message || err.message));
     } finally {
       setLoading(false);
       setUploadProgress(0);

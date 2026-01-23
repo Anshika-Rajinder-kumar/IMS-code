@@ -20,9 +20,9 @@ Authorization: Bearer <your-jwt-token>
 ### 1. Register User
 ```powershell
 $body = @{
-    fullName = "Admin User"
-    email = "admin@wissen.com"
-    password = "Admin@123"
+    fullName = "Your Name"
+    email = "your-email@domain.com"
+    password = "YourSecurePassword123"
     userType = "ADMIN"
     department = "HR"
     phone = "9876543210"
@@ -37,8 +37,8 @@ Invoke-RestMethod -Uri "http://localhost:8080/api/auth/register" `
 ### 2. Login
 ```powershell
 $body = @{
-    email = "admin@wissen.com"
-    password = "Admin@123"
+    email = "your-email@domain.com"
+    password = "YourSecurePassword123"
     userType = "ADMIN"
 } | ConvertTo-Json
 
@@ -164,7 +164,7 @@ $body = @{
     reportingManager = "John Doe"
     workMode = "ONSITE"
     status = "GENERATED"
-    generatedBy = "admin@wissen.com"
+    generatedBy = "your-email@domain.com"
 } | ConvertTo-Json
 
 Invoke-RestMethod -Uri "http://localhost:8080/api/offers" `
@@ -180,9 +180,9 @@ Invoke-RestMethod -Uri "http://localhost:8080/api/offers" `
 curl -X POST http://localhost:8080/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
-    "fullName": "Admin User",
-    "email": "admin@wissen.com",
-    "password": "Admin@123",
+    "fullName": "Your Name",
+    "email": "your-email@domain.com",
+    "password": "YourSecurePassword123",
     "userType": "ADMIN",
     "department": "HR",
     "phone": "9876543210"
@@ -194,8 +194,8 @@ curl -X POST http://localhost:8080/api/auth/register \
 curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "admin@wissen.com",
-    "password": "Admin@123",
+    "email": "your-email@domain.com",
+    "password": "YourSecurePassword123",
     "userType": "ADMIN"
   }'
 ```
@@ -220,7 +220,7 @@ curl -X PATCH "http://localhost:8080/api/interns/1/status?status=ACTIVE" \
 
 ### 6. Verify Document
 ```bash
-curl -X PATCH "http://localhost:8080/api/documents/1/verify?verifiedBy=admin@wissen.com" \
+curl -X PATCH "http://localhost:8080/api/documents/1/verify?verifiedBy=your-email@domain.com" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
@@ -242,8 +242,8 @@ Write-Host "===== Wissen IMS API Tests =====" -ForegroundColor Cyan
 Write-Host "`n1. Registering user..." -ForegroundColor Yellow
 $registerBody = @{
     fullName = "Test Admin"
-    email = "testadmin@wissen.com"
-    password = "Test@123"
+    email = "your-email@domain.com"
+    password = "YourSecurePassword123"
     userType = "ADMIN"
     department = "HR"
     phone = "9876543210"
@@ -260,8 +260,8 @@ try {
 # 2. Login
 Write-Host "`n2. Logging in..." -ForegroundColor Yellow
 $loginBody = @{
-    email = "testadmin@wissen.com"
-    password = "Test@123"
+    email = "your-email@domain.com"
+    password = "YourSecurePassword123"
     userType = "ADMIN"
 } | ConvertTo-Json
 
@@ -346,7 +346,7 @@ $offerBody = @{
     reportingManager = "Test Manager"
     workMode = "ONSITE"
     status = "GENERATED"
-    generatedBy = "testadmin@wissen.com"
+    generatedBy = "your-email@domain.com"
 } | ConvertTo-Json
 
 $offer = Invoke-RestMethod -Uri "$baseUrl/offers" `
@@ -393,7 +393,7 @@ Import this JSON into Postman:
             "header": [{"key": "Content-Type", "value": "application/json"}],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fullName\": \"Admin User\",\n  \"email\": \"admin@wissen.com\",\n  \"password\": \"Admin@123\",\n  \"userType\": \"ADMIN\",\n  \"department\": \"HR\",\n  \"phone\": \"9876543210\"\n}"
+              "raw": "{\n  \"fullName\": \"Your Name\",\n  \"email\": \"your-email@domain.com\",\n  \"password\": \"YourSecurePassword123\",\n  \"userType\": \"ADMIN\",\n  \"department\": \"HR\",\n  \"phone\": \"9876543210\"\n}"
             },
             "url": "{{baseUrl}}/auth/register"
           }
@@ -405,7 +405,7 @@ Import this JSON into Postman:
             "header": [{"key": "Content-Type", "value": "application/json"}],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@wissen.com\",\n  \"password\": \"Admin@123\",\n  \"userType\": \"ADMIN\"\n}"
+              "raw": "{\n  \"email\": \"your-email@domain.com\",\n  \"password\": \"YourSecurePassword123\",\n  \"userType\": \"ADMIN\"\n}"
             },
             "url": "{{baseUrl}}/auth/login"
           },

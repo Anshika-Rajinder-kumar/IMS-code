@@ -1,5 +1,109 @@
 # 🚀 Quick Start Guide - Wissen IMS
 
+Complete setup guide to run the Intern Management System with frontend and backend.
+
+## Prerequisites
+
+- **Java 17+** - Backend runtime
+- **Node.js 18+** - Frontend runtime  
+- **PostgreSQL 14+** - Database
+- **Maven 3.6+** - Build tool
+- **Docker** (optional) - For containerized deployment
+
+## Option 1: Docker Compose (Recommended)
+
+### Single Command Setup
+
+```powershell
+# From project root
+docker-compose up -d
+```
+
+This starts:
+- ✅ PostgreSQL on port 5432
+- ✅ Backend API on port 8080
+- ✅ Frontend on port 3000
+
+### Access the Application
+
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8080/api
+- **Database**: localhost:5432
+
+### Initial Setup
+
+After deployment, you'll need to:
+1. Register your first admin user via the registration page
+2. Use the registration endpoint to create users with appropriate roles (ADMIN, HR, COLLEGE, INTERN)
+3. Admin users can then manage other users through the application
+
+### Stop Services
+
+```powershell
+docker-compose down
+```
+
+### View Logs
+
+```powershell
+docker-compose logs -f
+```
+
+## Option 2: Local Development
+
+### Step 1: Setup Database
+
+```powershell
+# Start PostgreSQL
+docker run --name postgres `
+  -e POSTGRES_DB=wissen_ims `
+  -e POSTGRES_USER=wissen_user `
+  -e POSTGRES_PASSWORD=wissen_password `
+  -p 5432:5432 `
+  -d postgres:14
+```
+
+### Step 2: Start Backend
+
+```powershell
+cd backend
+mvn clean install
+mvn spring-boot:run
+```
+
+Backend starts on: **http://localhost:8080/api**
+
+### Step 3: Load Test Data (Optional)
+
+```powershell
+psql -U wissen_user -d wissen_ims -f backend/src/main/resources/test-data.sql
+```
+
+### Step 4: Start Frontend
+
+```powershell
+cd ..
+npm install
+npm run dev
+```
+
+Frontend starts on: **http://localhost:3000**
+
+## Option 3: Using PowerShell Scripts
+
+### Windows Quick Start
+
+```powershell
+# Start everything
+.\start.ps1
+
+# Development mode (frontend only)
+.\dev.ps1
+
+# Stop everything
+.\stop.ps1
+```
+
 ## Getting Started
 
 Your Wissen Intern Management System is now running! 🎉
@@ -8,19 +112,19 @@ Your Wissen Intern Management System is now running! 🎉
 
 Open your browser and navigate to: **http://localhost:3000**
 
-## Default Login Credentials
+## Initial User Setup
 
-You can use any email and password to login (mock authentication for demo purposes):
-
-**Admin Login:**
-- User Type: Admin
-- Email: admin@wissen.com
-- Password: admin123
-
-**HR Login:**
-- User Type: HR
-- Email: hr@wissen.com
-- Password: hr123
+To get started:
+1. Navigate to the registration page
+2. Register your first admin user with:
+   - Full Name
+   - Email
+   - Password (min 8 characters)
+   - User Type: ADMIN
+   - Department
+   - Phone Number
+3. Login with your registered credentials
+4. Admin users can create other users (HR, College, Intern) as needed
 
 ## Navigation Guide
 

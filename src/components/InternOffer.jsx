@@ -1,64 +1,102 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
+import api from '../services/api';
 import './Offers.css';
 
 const InternOffer = () => {
   const [user, setUser] = useState(null);
-  const [offerStatus, setOfferStatus] = useState('IN_PROGRESS'); // IN_PROGRESS, GENERATED, ACCEPTED
+  const [offerData, setOfferData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
-  
-  // Dummy offer data
-  const offerData = {
-    position: 'Software Engineering Intern',
-    department: 'Technology',
-    stipend: 25000,
-    duration: '6 months',
-    startDate: '2026-03-01',
-    location: 'Bangalore, India',
-    reportingManager: 'Rajesh Kumar',
-    workMode: 'HYBRID',
-    generatedAt: '2026-01-20',
-    offerNumber: 'WIS-2026-INT-001',
-    companyName: 'Wissen Technology',
-    benefits: [
-      'Health Insurance',
-      'Learning & Development Budget',
-      'Flexible Working Hours',
-      'Team Outings',
-      'Certification Support'
-    ]
-  };
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (userData) {
-      setUser(JSON.parse(userData));
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+      fetchOffer(parsedUser.id);
     }
-    
-    // Simulate offer generation status - you can change this for demo
-    // Options: 'IN_PROGRESS', 'GENERATED', 'ACCEPTED'
-    setOfferStatus('GENERATED');
   }, []);
 
-  const handleDownload = () => {
-    alert('Downloading offer letter as PDF...');
-    // In real implementation, this would trigger PDF download
+  const fetchOffer = async (internId) => {
+    try {
+      setLoading(true);
+      const data = await api.getLatestOfferByInternId(internId);
+      setOfferData(data);
+    } catch (error) {
+      console.error('Error fetching offer:', error);
+      // Offer not found is not an error - intern may not have offer yet
+      setOfferData(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleAccept = () => {
+  const handleDownload = () => {
+    if (!offerData) return;
+    alert('Downloading offer letter as PDF...');
+    // In real implementation, trigger PDF download from backend
+    // window.location.href = api.baseURL + '/offers/' + offerData.id + '/download';
+  };
+
+  const handleAccept = async () => {
     const confirmed = window.confirm('Do you want to accept this offer? This action cannot be undone.');
     if (confirmed) {
-      setOfferStatus('ACCEPTED');
-      alert('🎉 Congratulations! You have accepted the offer. HR will contact you soon with next steps.');
+      try {
+        await api.acceptOffer(offerData.id);
+        await fetchOffer(user.id); // Refresh offer data
+        alert('🎉 Congratulations! You have accepted the offer. HR will contact you soon with next steps.');
+      } catch (error) {
+        console.error('Error accepting offer:', error);
+        alert('Failed to accept offer: ' + error.message);
+      }
     }
   };
 
-  const handleDecline = () => {
+  const handleDecline = async () => {
     const confirmed = window.confirm('Are you sure you want to decline this offer?');
     if (confirmed) {
-      alert('Offer declined. Thank you for your time.');
+      try {
+        await api.rejectOffer(offerData.id);
+        await fetchOffer(user.id); // Refresh offer data
+        alert('Offer declined. Thank you for your time.');
+      } catch (error) {
+        console.error('Error declining offer:', error);
+        alert('Failed to decline offer: ' + error.message);
+      }
     }
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="dashboard-container">
+        <Sidebar />
+        <main className="main-content">
+          <header className="dashboard-header">
+            <div>
+              <h1 className="page-title">My Offer Letter</h1>
+              <p className="page-subtitle">View and manage your internship offer</p>
+            </div>
+          </header>
+          <div className="card" style={{ textAlign: 'center', padding: '60px 20px' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
+            <p>Loading offer details...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Determine offer status
+  const getOfferStatus = () => {
+    if (!offerData) return 'IN_PROGRESS';
+    if (offerData.status === 'ACCEPTED') return 'ACCEPTED';
+    if (offerData.status === 'GENERATED' || offerData.status === 'SENT') return 'GENERATED';
+    return 'IN_PROGRESS';
+  };
+
+  const offerStatus = getOfferStatus();
 
   return (
     <div className="dashboard-container">
@@ -161,7 +199,7 @@ const InternOffer = () => {
                       Monthly Stipend
                     </div>
                     <div style={{ fontSize: '20px', fontWeight: '700', color: '#10b981' }}>
-                      ₹{offerData.stipend.toLocaleString()}
+                      ₹{offerData?.stipend?.toLocaleString() || '0'}
                     </div>
                   </div>
                   
@@ -216,17 +254,19 @@ const InternOffer = () => {
                 </div>
 
                 {/* Benefits */}
-                <div style={{ marginTop: '24px', padding: '20px', background: '#f9fafb', borderRadius: '8px' }}>
-                  <h4 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>🎁 Benefits & Perks</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-                    {offerData.benefits.map((benefit, index) => (
-                      <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ color: '#10b981' }}>✓</span>
-                        <span>{benefit}</span>
-                      </div>
-                    ))}
+                {offerData?.benefits && offerData.benefits.length > 0 && (
+                  <div style={{ marginTop: '24px', padding: '20px', background: '#f9fafb', borderRadius: '8px' }}>
+                    <h4 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>🎁 Benefits & Perks</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                      {offerData.benefits.split(',').map((benefit, index) => (
+                        <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ color: '#10b981' }}>✓</span>
+                          <span>{benefit.trim()}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Action Buttons */}
                 <div style={{ 

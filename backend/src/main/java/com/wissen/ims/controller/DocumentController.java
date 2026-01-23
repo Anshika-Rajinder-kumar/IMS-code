@@ -63,10 +63,13 @@ public class DocumentController {
     public ResponseEntity<ApiResponse<Document>> uploadDocument(
             @RequestParam Long internId,
             @RequestParam String name,
+            @RequestParam(required = false) String label,
+            @RequestParam(required = false) String icon,
+            @RequestParam(required = false) String description,
             @RequestParam String type,
             @RequestParam("file") MultipartFile file) {
         try {
-            Document document = documentService.uploadDocument(internId, name, type, file);
+            Document document = documentService.uploadDocument(internId, name, label, icon, description, type, file);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.success(document));
         } catch (Exception e) {
@@ -76,10 +79,10 @@ public class DocumentController {
     }
 
     @PatchMapping("/{id}/verify")
-    public ResponseEntity<ApiResponse<Document>> verifyDocument(
-            @PathVariable Long id,
-            @RequestParam String verifiedBy) {
+    public ResponseEntity<ApiResponse<Document>> verifyDocument(@PathVariable Long id) {
         try {
+            // Get verifiedBy from request context or set default
+            String verifiedBy = "HR Manager"; // You can get this from authentication context
             Document document = documentService.verifyDocument(id, verifiedBy);
             return ResponseEntity.ok(ApiResponse.success(document));
         } catch (Exception e) {
@@ -88,18 +91,31 @@ public class DocumentController {
         }
     }
 
+    @PutMapping("/{id}/verify")
+    public ResponseEntity<ApiResponse<Document>> verifyDocumentPut(@PathVariable Long id) {
+        return verifyDocument(id);
+    }
+
     @PatchMapping("/{id}/reject")
     public ResponseEntity<ApiResponse<Document>> rejectDocument(
             @PathVariable Long id,
-            @RequestParam String reason,
-            @RequestParam String verifiedBy) {
+            @RequestBody(required = false) java.util.Map<String, String> requestBody) {
         try {
+            String reason = requestBody != null ? requestBody.get("reason") : "Document rejected";
+            String verifiedBy = "HR Manager"; // You can get this from authentication context
             Document document = documentService.rejectDocument(id, reason, verifiedBy);
             return ResponseEntity.ok(ApiResponse.success(document));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.error(e.getMessage()));
         }
+    }
+
+    @PutMapping("/{id}/reject")
+    public ResponseEntity<ApiResponse<Document>> rejectDocumentPut(
+            @PathVariable Long id,
+            @RequestBody(required = false) java.util.Map<String, String> requestBody) {
+        return rejectDocument(id, requestBody);
     }
 
     @GetMapping("/{id}/download")

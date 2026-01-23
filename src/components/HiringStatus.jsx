@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
+import api from '../services/api';
 import './HiringStatus.css';
 
 const HiringStatus = () => {
@@ -11,129 +12,36 @@ const HiringStatus = () => {
   const [filterRound, setFilterRound] = useState('all');
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showModal, setShowModal] = useState(false);
-
-  // Mock student data
-  const [students, setStudents] = useState([
-    { 
-      id: 1, 
-      name: 'Rahul Kumar', 
-      email: 'rahul.kumar@student.com', 
-      phone: '9876543210',
-      branch: 'Computer Science', 
-      cgpa: 8.5, 
-      graduationYear: 2026, 
-      currentRound: 'HR Round',
-      status: 'CLEARED',
-      score: 92,
-      appliedDate: '2026-01-10',
-      lastUpdated: '2026-01-20'
-    },
-    { 
-      id: 2, 
-      name: 'Priya Sharma', 
-      email: 'priya.sharma@student.com', 
-      phone: '9876543211',
-      branch: 'Information Technology', 
-      cgpa: 8.8, 
-      graduationYear: 2026, 
-      currentRound: 'Technical Round 2',
-      status: 'PENDING',
-      score: 85,
-      appliedDate: '2026-01-12',
-      lastUpdated: '2026-01-21'
-    },
-    { 
-      id: 3, 
-      name: 'Amit Patel', 
-      email: 'amit.patel@student.com', 
-      phone: '9876543212',
-      branch: 'Computer Science', 
-      cgpa: 7.9, 
-      graduationYear: 2026, 
-      currentRound: 'Technical Round 1',
-      status: 'CLEARED',
-      score: 78,
-      appliedDate: '2026-01-08',
-      lastUpdated: '2026-01-18'
-    },
-    { 
-      id: 4, 
-      name: 'Sneha Reddy', 
-      email: 'sneha.reddy@student.com', 
-      phone: '9876543213',
-      branch: 'Electronics', 
-      cgpa: 8.2, 
-      graduationYear: 2026, 
-      currentRound: 'Aptitude Test',
-      status: 'PENDING',
-      score: null,
-      appliedDate: '2026-01-15',
-      lastUpdated: '2026-01-22'
-    },
-    { 
-      id: 5, 
-      name: 'Vijay Singh', 
-      email: 'vijay.singh@student.com', 
-      phone: '9876543214',
-      branch: 'Computer Science', 
-      cgpa: 9.1, 
-      graduationYear: 2026, 
-      currentRound: 'Selected',
-      status: 'CLEARED',
-      score: 96,
-      appliedDate: '2026-01-05',
-      lastUpdated: '2026-01-19'
-    },
-    { 
-      id: 6, 
-      name: 'Ananya Iyer', 
-      email: 'ananya.iyer@student.com', 
-      phone: '9876543215',
-      branch: 'Information Technology', 
-      cgpa: 8.6, 
-      graduationYear: 2026, 
-      currentRound: 'HR Round',
-      status: 'PENDING',
-      score: 88,
-      appliedDate: '2026-01-11',
-      lastUpdated: '2026-01-21'
-    },
-    { 
-      id: 7, 
-      name: 'Rohan Gupta', 
-      email: 'rohan.gupta@student.com', 
-      phone: '9876543216',
-      branch: 'Mechanical', 
-      cgpa: 7.5, 
-      graduationYear: 2026, 
-      currentRound: 'Technical Round 1',
-      status: 'REJECTED',
-      score: 55,
-      appliedDate: '2026-01-09',
-      lastUpdated: '2026-01-17'
-    },
-    { 
-      id: 8, 
-      name: 'Neha Verma', 
-      email: 'neha.verma@student.com', 
-      phone: '9876543217',
-      branch: 'Electronics', 
-      cgpa: 8.0, 
-      graduationYear: 2026, 
-      currentRound: 'Technical Round 2',
-      status: 'CLEARED',
-      score: 82,
-      appliedDate: '2026-01-13',
-      lastUpdated: '2026-01-20'
-    },
-  ]);
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (userData) {
-      setUser(JSON.parse(userData));
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+      fetchStudents(parsedUser);
     }
   }, []);
+
+  const fetchStudents = async (userData) => {
+    try {
+      setLoading(true);
+      const data = await api.getInterns();
+      
+      // Filter students from the same college if user is college type
+      const filteredData = userData.userType === 'COLLEGE' && userData.collegeName
+        ? data.filter(student => student.collegeName && student.collegeName === userData.collegeName)
+        : data;
+      
+      setStudents(filteredData);
+    } catch (error) {
+      console.error('Error fetching students:', error);
+      alert('Failed to load students: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusBadge = (status) => {
     const statusMap = {
@@ -161,8 +69,8 @@ const HiringStatus = () => {
     const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          student.branch.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || student.status === filterStatus;
-    const matchesRound = filterRound === 'all' || student.currentRound === filterRound;
+    const matchesStatus = filterStatus === 'all' || student.hiringStatus === filterStatus;
+    const matchesRound = filterRound === 'all' || student.hiringRound === filterRound;
     return matchesSearch && matchesStatus && matchesRound;
   });
 
@@ -170,9 +78,9 @@ const HiringStatus = () => {
 
   const stats = {
     total: students.length,
-    selected: students.filter(s => s.currentRound === 'Selected').length,
-    pending: students.filter(s => s.status === 'PENDING').length,
-    rejected: students.filter(s => s.status === 'REJECTED').length
+    selected: students.filter(s => s.hiringRound === 'Selected').length,
+    pending: students.filter(s => s.hiringStatus === 'PENDING').length,
+    rejected: students.filter(s => s.hiringStatus === 'REJECTED').length
   };
 
   const viewDetails = (student) => {
@@ -315,20 +223,20 @@ const HiringStatus = () => {
                   </div>
 
                   <div className="student-status-section">
-                    <div className="current-round" style={{ borderColor: getRoundColor(student.currentRound) }}>
+                    <div className="current-round" style={{ borderColor: getRoundColor(student.hiringRound) }}>
                       <span className="round-label">Current Round</span>
-                      <span className="round-name" style={{ color: getRoundColor(student.currentRound) }}>
-                        {student.currentRound}
+                      <span className="round-name" style={{ color: getRoundColor(student.hiringRound) }}>
+                        {student.hiringRound || 'Not Started'}
                       </span>
                     </div>
                     
                     <div className="status-row">
                       <span className={`status-badge ${statusBadge.class}`}>
-                        {statusBadge.icon} {student.status}
+                        {statusBadge.icon} {student.hiringStatus || 'NOT_STARTED'}
                       </span>
-                      {student.score && (
+                      {student.hiringScore && (
                         <span className="score-badge">
-                          {student.score}%
+                          {student.hiringScore}%
                         </span>
                       )}
                     </div>
@@ -388,23 +296,23 @@ const HiringStatus = () => {
                   <div className="info-grid">
                     <div className="info-item">
                       <span className="info-label">Current Round</span>
-                      <span className="info-value" style={{ color: getRoundColor(selectedStudent.currentRound) }}>
-                        {selectedStudent.currentRound}
+                      <span className="info-value" style={{ color: getRoundColor(selectedStudent.hiringRound) }}>
+                        {selectedStudent.hiringRound || 'Not Started'}
                       </span>
                     </div>
                     <div className="info-item">
                       <span className="info-label">Status</span>
-                      <span className={`status-badge ${getStatusBadge(selectedStudent.status).class}`}>
-                        {getStatusBadge(selectedStudent.status).icon} {selectedStudent.status}
+                      <span className={`status-badge ${getStatusBadge(selectedStudent.hiringStatus).class}`}>
+                        {getStatusBadge(selectedStudent.hiringStatus).icon} {selectedStudent.hiringStatus || 'NOT_STARTED'}
                       </span>
                     </div>
                     <div className="info-item">
                       <span className="info-label">Score</span>
-                      <span className="info-value">{selectedStudent.score ? `${selectedStudent.score}%` : 'N/A'}</span>
+                      <span className="info-value">{selectedStudent.hiringScore ? `${selectedStudent.hiringScore}%` : 'N/A'}</span>
                     </div>
                     <div className="info-item">
                       <span className="info-label">Applied Date</span>
-                      <span className="info-value">{new Date(selectedStudent.appliedDate).toLocaleDateString('en-IN')}</span>
+                      <span className="info-value">{selectedStudent.createdAt ? new Date(selectedStudent.createdAt).toLocaleDateString('en-IN') : 'N/A'}</span>
                     </div>
                   </div>
                 </div>
@@ -415,7 +323,7 @@ const HiringStatus = () => {
                     <span className="timeline-dot"></span>
                     <div>
                       <div className="timeline-title">Last Updated</div>
-                      <div className="timeline-date">{new Date(selectedStudent.lastUpdated).toLocaleDateString('en-IN')}</div>
+                      <div className="timeline-date">{selectedStudent.updatedAt ? new Date(selectedStudent.updatedAt).toLocaleDateString('en-IN') : 'N/A'}</div>
                     </div>
                   </div>
                 </div>

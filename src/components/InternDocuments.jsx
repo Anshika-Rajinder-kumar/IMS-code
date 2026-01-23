@@ -1,110 +1,105 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
+import api from '../services/api';
 import './Documents.css';
 
 const InternDocuments = () => {
   const [user, setUser] = useState(null);
-  
-  // Required documents list with upload status
-  const [requiredDocuments, setRequiredDocuments] = useState([
-    { 
-      id: 1,
-      label: 'Aadhaar Card',
-      icon: '🆔',
-      description: 'Government issued identity proof',
-      required: true,
-      uploaded: true,
-      status: 'VERIFIED',
-      file: { name: 'aadhaar.pdf', type: 'PDF', size: '1.2 MB', uploadedAt: '2026-01-15' },
-      verifiedBy: 'HR Manager',
-      verifiedAt: '2026-01-16'
-    },
-    { 
-      id: 2,
-      label: 'PAN Card',
-      icon: '💳',
-      description: 'Permanent Account Number card',
-      required: true,
-      uploaded: true,
-      status: 'VERIFIED',
-      file: { name: 'pan_card.pdf', type: 'PDF', size: '850 KB', uploadedAt: '2026-01-15' },
-      verifiedBy: 'HR Manager',
-      verifiedAt: '2026-01-16'
-    },
-    { 
-      id: 3,
-      label: '10th Certificate',
-      icon: '📜',
-      description: 'Class 10th mark sheet or certificate',
-      required: true,
-      uploaded: false,
-      status: null,
-      file: null
-    },
-    { 
-      id: 4,
-      label: '12th Certificate',
-      icon: '📜',
-      description: 'Class 12th mark sheet or certificate',
-      required: true,
-      uploaded: false,
-      status: null,
-      file: null
-    },
-    { 
-      id: 5,
-      label: 'Degree Certificate',
-      icon: '🎓',
-      description: 'Bachelor degree or provisional certificate',
-      required: true,
-      uploaded: true,
-      status: 'PENDING',
-      file: { name: 'degree.pdf', type: 'PDF', size: '2.1 MB', uploadedAt: '2026-01-20' }
-    },
-    { 
-      id: 6,
-      label: 'Resume/CV',
-      icon: '📄',
-      description: 'Updated resume in PDF format',
-      required: true,
-      uploaded: true,
-      status: 'VERIFIED',
-      file: { name: 'resume.pdf', type: 'PDF', size: '450 KB', uploadedAt: '2026-01-14' },
-      verifiedBy: 'Admin User',
-      verifiedAt: '2026-01-15'
-    },
-    { 
-      id: 7,
-      label: 'Passport Size Photo',
-      icon: '📸',
-      description: 'Recent passport size photograph',
-      required: true,
-      uploaded: false,
-      status: null,
-      file: null
-    },
-    { 
-      id: 8,
-      label: 'Bank Passbook',
-      icon: '🏦',
-      description: 'First page of bank passbook or cancelled cheque',
-      required: true,
-      uploaded: false,
-      status: null,
-      file: null
-    }
-  ]);
-  
+  const [documents, setDocuments] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadFile, setUploadFile] = useState(null);
 
+  // Required document templates
+  const documentTemplates = [
+    { 
+      label: 'Aadhaar Card',
+      name: 'AADHAAR',
+      icon: '🆔',
+      description: 'Government issued identity proof',
+      required: true,
+      type: 'IDENTITY'
+    },
+    { 
+      label: 'PAN Card',
+      name: 'PAN',
+      icon: '💳',
+      description: 'Permanent Account Number card',
+      required: true,
+      type: 'IDENTITY'
+    },
+    { 
+      label: '10th Certificate',
+      name: 'CLASS_10',
+      icon: '📜',
+      description: 'Class 10th mark sheet or certificate',
+      required: true,
+      type: 'EDUCATION'
+    },
+    { 
+      label: '12th Certificate',
+      name: 'CLASS_12',
+      icon: '📜',
+      description: 'Class 12th mark sheet or certificate',
+      required: true,
+      type: 'EDUCATION'
+    },
+    { 
+      label: 'Degree Certificate',
+      name: 'DEGREE',
+      icon: '🎓',
+      description: 'Bachelor degree or provisional certificate',
+      required: true,
+      type: 'EDUCATION'
+    },
+    { 
+      label: 'Resume/CV',
+      name: 'RESUME',
+      icon: '📄',
+      description: 'Updated resume in PDF format',
+      required: true,
+      type: 'EDUCATION'
+    },
+    { 
+      label: 'Passport Size Photo',
+      name: 'PHOTO',
+      icon: '📸',
+      description: 'Recent passport size photograph',
+      required: true,
+      type: 'IDENTITY'
+    },
+    { 
+      label: 'Bank Passbook',
+      name: 'BANK_PASSBOOK',
+      icon: '🏦',
+      description: 'First page of bank passbook or cancelled cheque',
+      required: true,
+      type: 'OTHER'
+    }
+  ];
+
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (userData) {
-      setUser(JSON.parse(userData));
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+      fetchDocuments(parsedUser.id);
     }
   }, []);
+
+  const fetchDocuments = async (internId) => {
+    try {
+      setLoading(true);
+      const data = await api.getDocumentsByInternId(internId);
+      setDocuments(data);
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+      alert('Failed to load documents: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -113,67 +108,65 @@ const InternDocuments = () => {
     }
   };
 
-  const handleUploadClick = (doc) => {
-    setSelectedDoc(doc);
+  const handleUploadClick = (template) => {
+    setSelectedDoc(template);
     setUploadFile(null);
     setShowUploadModal(true);
   };
 
-  const handleUpload = (e) => {
+  const handleUpload = async (e) => {
     e.preventDefault();
     if (!uploadFile) {
       alert('Please select a file to upload');
       return;
     }
 
-    // Simulate upload
-    const updatedDocs = requiredDocuments.map(doc => {
-      if (doc.id === selectedDoc.id) {
-        return {
-          ...doc,
-          uploaded: true,
-          status: 'PENDING',
-          file: {
-            name: uploadFile.name,
-            type: uploadFile.name.split('.').pop().toUpperCase(),
-            size: (uploadFile.size / (1024 * 1024)).toFixed(2) + ' MB',
-            uploadedAt: new Date().toISOString().split('T')[0]
-          }
-        };
-      }
-      return doc;
-    });
+    try {
+      setLoading(true);
+      await api.uploadDocument(
+        user.id,
+        selectedDoc.name,
+        selectedDoc.label,
+        selectedDoc.icon,
+        selectedDoc.description,
+        selectedDoc.type,
+        uploadFile
+      );
 
-    setRequiredDocuments(updatedDocs);
-    setShowUploadModal(false);
-    setUploadFile(null);
-    alert('Document uploaded successfully! It will be verified by HR.');
+      // Refresh documents
+      await fetchDocuments(user.id);
+      
+      setShowUploadModal(false);
+      setUploadFile(null);
+      alert('Document uploaded successfully! It will be verified by HR.');
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      alert('Failed to upload document: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleReplace = (doc) => {
-    setSelectedDoc(doc);
+  const handleReplace = async (doc) => {
+    setSelectedDoc({...doc, isReplace: true});
     setUploadFile(null);
     setShowUploadModal(true);
   };
 
-  const handleDelete = (docId) => {
+  const handleDelete = async (docId) => {
     const confirmed = window.confirm('Are you sure you want to delete this document?');
     if (confirmed) {
-      const updatedDocs = requiredDocuments.map(doc => {
-        if (doc.id === docId) {
-          return {
-            ...doc,
-            uploaded: false,
-            status: null,
-            file: null,
-            verifiedBy: null,
-            verifiedAt: null
-          };
-        }
-        return doc;
-      });
-      setRequiredDocuments(updatedDocs);
-      alert('Document deleted successfully');
+      try {
+        setLoading(true);
+        await api.deleteDocument(docId);
+        await fetchDocuments(user.id);
+        alert('Document deleted successfully');
+      } catch (error) {
+        console.error('Error deleting document:', error);
+        alert('Failed to delete document: ' + error.message);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -204,11 +197,25 @@ const InternDocuments = () => {
     return messageMap[status] || '';
   };
 
-  const verifiedCount = requiredDocuments.filter(d => d.status === 'VERIFIED').length;
-  const pendingCount = requiredDocuments.filter(d => d.status === 'PENDING').length;
-  const rejectedCount = requiredDocuments.filter(d => d.status === 'REJECTED').length;
-  const uploadedCount = requiredDocuments.filter(d => d.uploaded).length;
-  const totalRequired = requiredDocuments.filter(d => d.required).length;
+  // Merge templates with uploaded documents
+  const getMergedDocuments = () => {
+    return documentTemplates.map(template => {
+      const uploadedDoc = documents.find(d => d.name === template.name);
+      return {
+        ...template,
+        ...uploadedDoc,
+        uploaded: !!uploadedDoc,
+        id: uploadedDoc?.id
+      };
+    });
+  };
+
+  const requiredDocuments = getMergedDocuments();
+  const verifiedCount = documents.filter(d => d.status === 'VERIFIED').length;
+  const pendingCount = documents.filter(d => d.status === 'PENDING').length;
+  const rejectedCount = documents.filter(d => d.status === 'REJECTED').length;
+  const uploadedCount = documents.length;
+  const totalRequired = documentTemplates.filter(d => d.required).length;
 
   return (
     <div className="dashboard-container">
@@ -301,9 +308,9 @@ const InternDocuments = () => {
           </div>
           <div style={{ padding: '20px' }}>
             <div style={{ display: 'grid', gap: '16px' }}>
-              {requiredDocuments.map(doc => (
+              {requiredDocuments.map((doc, index) => (
                 <div 
-                  key={doc.id}
+                  key={doc.id || `template-${index}`}
                   style={{
                     border: doc.uploaded 
                       ? (doc.status === 'VERIFIED' ? '2px solid #10b981' : 
@@ -366,11 +373,11 @@ const InternDocuments = () => {
                       </p>
                       
                       {/* File Details if uploaded */}
-                      {doc.uploaded && doc.file && (
+                      {doc.uploaded && (
                         <div style={{ fontSize: '12px', color: '#666', display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
-                          <span>📄 {doc.file.name}</span>
-                          <span>💾 {doc.file.size}</span>
-                          <span>📅 {new Date(doc.file.uploadedAt).toLocaleDateString()}</span>
+                          <span>📄 {doc.filePath?.split('/').pop() || 'Document'}</span>
+                          <span>💾 {doc.size || 'Unknown size'}</span>
+                          <span>📅 {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : 'N/A'}</span>
                           {doc.verifiedBy && (
                             <span style={{ color: '#10b981', fontWeight: '500' }}>
                               ✓ Verified by {doc.verifiedBy}

@@ -34,41 +34,31 @@ const Login = () => {
       setLoading(true);
       setError('');
       
-      // Demo mode for UI testing (no backend required)
-      const demoUsers = {
-        'admin@wissen.com': { password: 'admin123', name: 'Admin User', userType: 'ADMIN' },
-        'hr@wissen.com': { password: 'hr123', name: 'HR Manager', userType: 'HR' },
-        'college@wissen.com': { password: 'college123', name: 'ABC College', userType: 'COLLEGE' },
-        'intern@wissen.com': { password: 'intern123', name: 'John Doe', userType: 'INTERN' }
-      };
+      // Call API for authentication
+      const response = await api.login(formData.email, formData.password, formData.userType);
       
-      const demoUser = demoUsers[formData.email.toLowerCase()];
+      console.log('✅ Login successful for:', response.userType);
       
-      if (demoUser && demoUser.password === formData.password && demoUser.userType === formData.userType) {
-        // Demo login successful
-        localStorage.setItem('token', 'demo-token-' + Date.now());
-        localStorage.setItem('user', JSON.stringify({
-          email: formData.email,
-          name: demoUser.name,
-          userType: demoUser.userType
-        }));
-        
-        console.log('✅ Login successful for:', demoUser.userType);
-        
-        // Small delay to show loading state, then navigate
-        setTimeout(() => {
-          // Route based on user type
-          if (demoUser.userType === 'COLLEGE') {
-            navigate('/students');
-          } else if (demoUser.userType === 'INTERN') {
-            navigate('/learning');
-          } else {
-            navigate('/dashboard');
-          }
-        }, 300);
-      } else {
-        setError('Invalid credentials. Please check your email, password, and make sure the user type matches.');
-      }
+      // Store token and user data in localStorage
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify({
+        email: response.email,
+        name: response.name,
+        userType: response.userType,
+        collegeName: response.collegeName  // For COLLEGE users
+      }));
+      
+      // Small delay to show loading state, then navigate
+      setTimeout(() => {
+        // Route based on user type
+        if (response.userType === 'COLLEGE') {
+          navigate('/hiring-status'); // College view for student hiring status
+        } else if (response.userType === 'INTERN') {
+          navigate('/documents'); // Intern view for document management
+        } else {
+          navigate('/dashboard'); // Admin/HR dashboard
+        }
+      }, 300);
     } catch (error) {
       console.error('Login error:', error);
       setError(error.message || 'Invalid credentials. Please try again.');
@@ -139,29 +129,6 @@ const Login = () => {
               value={formData.password}
               onChange={handleChange}
             />
-          </div>
-
-          {/* Demo Credentials Info */}
-          <div style={{ 
-            background: '#f0f9ff', 
-            border: '1px solid #bae6fd', 
-            borderRadius: '8px', 
-            padding: '12px', 
-            marginBottom: '16px',
-            fontSize: '12px'
-          }}>
-            <strong style={{ color: '#0369a1', display: 'block', marginBottom: '8px' }}>
-              📋 Demo Credentials (Development Mode)
-            </strong>
-            <div style={{ color: '#0c4a6e', lineHeight: '1.8' }}>
-              <div><strong>Admin:</strong> admin@wissen.com / admin123</div>
-              <div><strong>HR:</strong> hr@wissen.com / hr123</div>
-              <div><strong>College:</strong> college@wissen.com / college123</div>
-              <div><strong>Intern:</strong> intern@wissen.com / intern123</div>
-            </div>
-            <div style={{ marginTop: '8px', fontSize: '11px', color: '#0369a1' }}>
-              * Select matching user type for each credential
-            </div>
           </div>
 
           <div className="form-options">

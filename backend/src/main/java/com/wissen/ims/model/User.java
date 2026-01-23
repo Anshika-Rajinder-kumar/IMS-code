@@ -39,6 +39,8 @@ public class User {
     
     private String phone;
 
+    private Long collegeId;  // For COLLEGE user type - links to College entity
+
     @Column(nullable = false)
     private Boolean active = true;
 
@@ -50,6 +52,6 @@ public class User {
     private LocalDateTime updatedAt;
 
     public enum UserType {
-        ADMIN, HR
+        ADMIN, HR, COLLEGE, INTERN
     }
 }

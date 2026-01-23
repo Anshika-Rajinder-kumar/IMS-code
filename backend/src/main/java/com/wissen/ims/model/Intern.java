@@ -47,11 +47,21 @@ public class Intern {
     @Column(nullable = false)
     private String cgpa;
 
-    @Column(nullable = false)
+    
     private LocalDate joinDate;
 
     @Column(length = 500)
     private String address;
+
+    @Column(length = 100)
+    private String hiringRound; // Current hiring round: "Technical Round 1", "HR Round", etc.
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 50)
+    private HiringStatus hiringStatus; // Current status in hiring process
+
+    @Column
+    private Integer hiringScore; // Overall hiring score
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -63,6 +73,15 @@ public class Intern {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    public enum HiringStatus {
+        NOT_STARTED,
+        PENDING,
+        IN_PROGRESS,
+        CLEARED,
+        REJECTED,
+        ON_HOLD
+    }
 
     public enum InternStatus {
         DOCUMENT_PENDING,

@@ -19,8 +19,8 @@ POST /auth/register
 ```
 - Creates admin user
 - Automatically saves JWT token
-- Email: admin@wissen.com
-- Password: Admin@123
+- Email: your-email@domain.com
+- Password: YourSecurePassword
 
 #### Step 2: Login (if registration fails)
 ```

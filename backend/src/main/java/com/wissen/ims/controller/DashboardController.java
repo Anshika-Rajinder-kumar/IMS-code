@@ -1,8 +1,10 @@
 package com.wissen.ims.controller;
 
 import com.wissen.ims.dto.ApiResponse;
+import com.wissen.ims.model.Candidate;
 import com.wissen.ims.model.Intern;
 import com.wissen.ims.model.Offer;
+import com.wissen.ims.service.CandidateService;
 import com.wissen.ims.service.CollegeService;
 import com.wissen.ims.service.InternService;
 import com.wissen.ims.service.OfferService;
@@ -28,6 +30,9 @@ public class DashboardController {
     @Autowired
     private OfferService offerService;
 
+    @Autowired
+    private CandidateService candidateService;
+
     @GetMapping("/stats")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getDashboardStats() {
         Map<String, Object> stats = new HashMap<>();
@@ -35,7 +40,13 @@ public class DashboardController {
         // College stats
         stats.put("totalColleges", collegeService.getAllColleges().size());
 
-        // Intern stats
+        // Candidate stats (applicants not yet converted to interns)
+        stats.put("totalCandidates", candidateService.getAllCandidates().size());
+        stats.put("appliedCandidates", candidateService.countByStatus(Candidate.CandidateStatus.APPLIED));
+        stats.put("interviewingCandidates", candidateService.countByStatus(Candidate.CandidateStatus.INTERVIEWING));
+        stats.put("selectedCandidates", candidateService.countByStatus(Candidate.CandidateStatus.SELECTED));
+
+        // Intern stats (selected candidates who have joined)
         stats.put("totalInterns", internService.getAllInterns().size());
         stats.put("activeInterns", internService.countByStatus(Intern.InternStatus.ACTIVE));
         stats.put("onboardingInterns", internService.countByStatus(Intern.InternStatus.ONBOARDING));

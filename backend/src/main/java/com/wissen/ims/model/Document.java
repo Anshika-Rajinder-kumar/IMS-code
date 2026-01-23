@@ -29,6 +29,18 @@ public class Document {
     @Column(nullable = false)
     private String name;
 
+    @Column(length = 100)
+    private String label; // User-friendly label like "Aadhaar Card", "PAN Card"
+
+    @Column(length = 10)
+    private String icon; // Emoji icon for UI display
+
+    @Column(length = 500)
+    private String description; // Description of the document
+
+    @Column(nullable = false)
+    private Boolean required = true; // Whether document is mandatory
+
     @Column(nullable = false)
     private String type; // PDF, JPG, PNG, DOC, DOCX
 

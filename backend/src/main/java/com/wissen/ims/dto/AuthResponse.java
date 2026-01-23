@@ -14,4 +14,5 @@ public class AuthResponse {
     private String email;
     private String name;
     private String userType;
+    private String collegeName;  // For COLLEGE user type
 }

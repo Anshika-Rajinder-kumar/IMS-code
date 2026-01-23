@@ -3,7 +3,9 @@ package com.wissen.ims.service;
 import com.wissen.ims.dto.AuthResponse;
 import com.wissen.ims.dto.LoginRequest;
 import com.wissen.ims.dto.RegisterRequest;
+import com.wissen.ims.model.College;
 import com.wissen.ims.model.User;
+import com.wissen.ims.repository.CollegeRepository;
 import com.wissen.ims.repository.UserRepository;
 import com.wissen.ims.security.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +21,9 @@ public class AuthService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private CollegeRepository collegeRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -43,11 +48,21 @@ public class AuthService {
         User user = userRepository.findByEmail(loginRequest.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        // Get college name for COLLEGE user type
+        String collegeName = null;
+        if (user.getUserType() == User.UserType.COLLEGE && user.getCollegeId() != null) {
+            College college = collegeRepository.findById(user.getCollegeId()).orElse(null);
+            if (college != null) {
+                collegeName = college.getName();
+            }
+        }
+
         return AuthResponse.builder()
                 .token(token)
                 .email(user.getEmail())
                 .name(user.getFullName())
                 .userType(user.getUserType().name())
+                .collegeName(collegeName)
                 .build();
     }
 

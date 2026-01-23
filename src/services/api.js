@@ -188,6 +188,51 @@ class ApiService {
     return this.delete(`/interns/${id}`);
   }
 
+  // Candidate APIs
+  async getCandidates() {
+    return this.get('/candidates');
+  }
+
+  async getCandidateById(id) {
+    return this.get(`/candidates/${id}`);
+  }
+
+  async getCandidatesByStatus(status) {
+    return this.get(`/candidates/status/${status}`);
+  }
+
+  async getCandidatesByCollegeId(collegeId) {
+    return this.get(`/candidates/college/${collegeId}`);
+  }
+
+  async getCandidatesByCollegeName(collegeName) {
+    return this.get(`/candidates/college/name/${encodeURIComponent(collegeName)}`);
+  }
+
+  async searchCandidates(term) {
+    return this.get(`/candidates/search?term=${encodeURIComponent(term)}`);
+  }
+
+  async createCandidate(candidate) {
+    return this.post('/candidates', candidate);
+  }
+
+  async updateCandidate(id, candidate) {
+    return this.put(`/candidates/${id}`, candidate);
+  }
+
+  async updateCandidateStatus(id, status) {
+    return this.patch(`/candidates/${id}/status?status=${status}`);
+  }
+
+  async deleteCandidate(id) {
+    return this.delete(`/candidates/${id}`);
+  }
+
+  async convertCandidateToIntern(candidateId, joinDate) {
+    return this.post(`/candidates/${candidateId}/convert-to-intern`, { joinDate });
+  }
+
   // Document APIs
   async getDocuments() {
     return this.get('/documents');
@@ -197,10 +242,13 @@ class ApiService {
     return this.get(`/documents/intern/${internId}`);
   }
 
-  async uploadDocument(internId, name, type, file) {
+  async uploadDocument(internId, name, label, icon, description, type, file) {
     const formData = new FormData();
     formData.append('internId', internId);
     formData.append('name', name);
+    formData.append('label', label);
+    formData.append('icon', icon);
+    formData.append('description', description);
     formData.append('type', type);
     formData.append('file', file);
     
@@ -259,6 +307,43 @@ class ApiService {
 
   async deleteOffer(id) {
     return this.delete(`/offers/${id}`);
+  }
+
+  // Hiring Round APIs
+  async getHiringRounds() {
+    return this.get('/hiring-rounds');
+  }
+
+  async getHiringRoundById(id) {
+    return this.get(`/hiring-rounds/${id}`);
+  }
+
+  async getHiringRoundsByInternId(internId) {
+    return this.get(`/hiring-rounds/intern/${internId}`);
+  }
+
+  async getHiringRoundsByStatus(status) {
+    return this.get(`/hiring-rounds/status/${status}`);
+  }
+
+  async createHiringRound(hiringRound) {
+    return this.post('/hiring-rounds', hiringRound);
+  }
+
+  async updateHiringRound(id, hiringRound) {
+    return this.put(`/hiring-rounds/${id}`, hiringRound);
+  }
+
+  async updateHiringRoundStatus(id, status) {
+    return this.patch(`/hiring-rounds/${id}/status?status=${status}`);
+  }
+
+  async deleteHiringRound(id) {
+    return this.delete(`/hiring-rounds/${id}`);
+  }
+
+  async getLatestOfferByInternId(internId) {
+    return this.get(`/offers/intern/${internId}/latest`);
   }
 }
 

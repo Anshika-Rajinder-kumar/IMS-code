@@ -47,7 +47,8 @@ public class DocumentService {
         return documentRepository.findByStatus(status);
     }
 
-    public Document uploadDocument(Long internId, String name, String type, MultipartFile file) throws IOException {
+    public Document uploadDocument(Long internId, String name, String label, String icon, 
+                                   String description, String type, MultipartFile file) throws IOException {
         Intern intern = internRepository.findById(internId)
                 .orElseThrow(() -> new RuntimeException("Intern not found with id: " + internId));
 
@@ -66,16 +67,34 @@ public class DocumentService {
         Path filePath = Paths.get(uploadDir, filename);
         Files.write(filePath, file.getBytes());
 
+        // Format file size
+        String formattedSize = formatFileSize(file.getSize());
+
         // Create document record
         Document document = new Document();
         document.setIntern(intern);
         document.setName(name);
+        document.setLabel(label != null ? label : name);
+        document.setIcon(icon != null ? icon : "📄");
+        document.setDescription(description != null ? description : "Document uploaded by intern");
+        document.setRequired(true);
         document.setType(type);
         document.setFilePath(filePath.toString());
-        document.setSize(String.valueOf(file.getSize()));
+        document.setSize(formattedSize);
         document.setStatus(Document.DocumentStatus.PENDING);
 
         return documentRepository.save(document);
+    }
+
+    // Helper method to format file size
+    private String formatFileSize(long size) {
+        if (size < 1024) {
+            return size + " B";
+        } else if (size < 1024 * 1024) {
+            return String.format("%.2f KB", size / 1024.0);
+        } else {
+            return String.format("%.2f MB", size / (1024.0 * 1024.0));
+        }
     }
 
     public Document verifyDocument(Long id, String verifiedBy) {

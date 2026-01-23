@@ -52,6 +52,23 @@ public class OfferController {
         return ResponseEntity.ok(ApiResponse.success(offers));
     }
 
+    @GetMapping("/intern/{internId}/latest")
+    public ResponseEntity<ApiResponse<Offer>> getLatestOfferByInternId(@PathVariable Long internId) {
+        try {
+            List<Offer> offers = offerService.getOffersByInternId(internId);
+            if (offers.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error("No offer found for intern"));
+            }
+            // Return the latest offer
+            Offer latestOffer = offers.get(offers.size() - 1);
+            return ResponseEntity.ok(ApiResponse.success(latestOffer));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
     @PostMapping
     public ResponseEntity<ApiResponse<Offer>> createOffer(@RequestBody Offer offer) {
         try {
