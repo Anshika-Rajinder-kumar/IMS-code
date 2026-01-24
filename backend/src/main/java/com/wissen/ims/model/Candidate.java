@@ -62,12 +62,6 @@ public class Candidate {
     @Column(nullable = false)
     private CandidateStatus status = CandidateStatus.APPLIED;
 
-    @Column
-    private String resumePath;
-
-    @Column
-    private String resumeName;
-
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -84,12 +78,12 @@ public class Candidate {
     }
 
     public enum CandidateStatus {
-        APPLIED, // Initial application
-        SCREENING, // Under screening
+        APPLIED,           // Initial application
+        SCREENING,         // Under screening
         INTERVIEW_SCHEDULED, // Interview scheduled
-        INTERVIEWING, // Currently interviewing
-        SELECTED, // Selected for internship
-        REJECTED, // Not selected
-        WITHDRAWN // Candidate withdrew
+        INTERVIEWING,      // Currently interviewing
+        SELECTED,          // Selected for internship
+        REJECTED,          // Not selected
+        WITHDRAWN          // Candidate withdrew
     }
 }

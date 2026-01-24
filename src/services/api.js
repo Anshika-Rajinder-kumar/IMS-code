@@ -213,25 +213,7 @@ class ApiService {
     return this.get(`/candidates/search?term=${encodeURIComponent(term)}`);
   }
 
-  async createCandidate(candidate, resumeFile) {
-    if (resumeFile) {
-      const formData = new FormData();
-      formData.append('candidate', new Blob([JSON.stringify(candidate)], { type: 'application/json' }));
-      formData.append('resume', resumeFile);
-      
-      const token = this.getAuthToken();
-      const headers = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`${this.baseURL}/candidates`, {
-        method: 'POST',
-        headers,
-        body: formData,
-      });
-      return this.handleResponse(response);
-    }
+  async createCandidate(candidate) {
     return this.post('/candidates', candidate);
   }
 
@@ -249,11 +231,6 @@ class ApiService {
 
   async convertCandidateToIntern(candidateId, joinDate) {
     return this.post(`/candidates/${candidateId}/convert-to-intern`, { joinDate });
-  }
-
-  getCandidateResumeUrl(id) {
-    const token = this.getAuthToken();
-    return `${this.baseURL}/candidates/${id}/resume?token=${token}`;
   }
 
   // Document APIs

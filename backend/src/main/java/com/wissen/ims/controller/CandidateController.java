@@ -5,17 +5,10 @@ import com.wissen.ims.model.Candidate;
 import com.wissen.ims.model.Intern;
 import com.wissen.ims.service.CandidateService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
-import org.springframework.http.HttpHeaders;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -75,12 +68,10 @@ public class CandidateController {
         return ResponseEntity.ok(ApiResponse.success(candidates));
     }
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse<Candidate>> createCandidate(
-            @RequestPart("candidate") Candidate candidate,
-            @RequestPart(value = "resume", required = false) MultipartFile resume) {
+    @PostMapping
+    public ResponseEntity<ApiResponse<Candidate>> createCandidate(@RequestBody Candidate candidate) {
         try {
-            Candidate createdCandidate = candidateService.createCandidate(candidate, resume);
+            Candidate createdCandidate = candidateService.createCandidate(candidate);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.success(createdCandidate));
         } catch (Exception e) {
@@ -89,43 +80,8 @@ public class CandidateController {
         }
     }
 
-    @GetMapping("/{id}/resume")
-    public ResponseEntity<Resource> getResume(@PathVariable Long id) {
-        try {
-            Candidate candidate = candidateService.getCandidateById(id);
-            if (candidate.getResumePath() == null) {
-                return ResponseEntity.notFound().build();
-            }
-
-            Path filePath = Paths.get(candidate.getResumePath());
-            Resource resource = new UrlResource(filePath.toUri());
-
-            if (resource.exists() && resource.isReadable()) {
-                String contentType = "application/octet-stream";
-                if (hibernateIsPresentAndInitialized(candidate)) {
-                    // Just a safety check, though Path should work fine
-                }
-
-                return ResponseEntity.ok()
-                        .contentType(MediaType.parseMediaType(contentType))
-                        .header(HttpHeaders.CONTENT_DISPOSITION,
-                                "attachment; filename=\"" + candidate.getResumeName() + "\"")
-                        .body(resource);
-            } else {
-                return ResponseEntity.notFound().build();
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    private boolean hibernateIsPresentAndInitialized(Object entity) {
-        return true; // Simplified check
-    }
-
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<Candidate>> updateCandidate(@PathVariable Long id,
-            @RequestBody Candidate candidate) {
+    public ResponseEntity<ApiResponse<Candidate>> updateCandidate(@PathVariable Long id, @RequestBody Candidate candidate) {
         try {
             Candidate updatedCandidate = candidateService.updateCandidate(id, candidate);
             return ResponseEntity.ok(ApiResponse.success(updatedCandidate));
@@ -156,7 +112,7 @@ public class CandidateController {
         try {
             String joinDateStr = payload.get("joinDate");
             LocalDate joinDate = joinDateStr != null ? LocalDate.parse(joinDateStr) : LocalDate.now();
-
+            
             Intern intern = candidateService.convertCandidateToIntern(id, joinDate);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.success(intern));
