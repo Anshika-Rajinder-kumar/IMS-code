@@ -4,8 +4,10 @@ import com.wissen.ims.dto.AuthResponse;
 import com.wissen.ims.dto.LoginRequest;
 import com.wissen.ims.dto.RegisterRequest;
 import com.wissen.ims.model.College;
+import com.wissen.ims.model.Intern;
 import com.wissen.ims.model.User;
 import com.wissen.ims.repository.CollegeRepository;
+import com.wissen.ims.repository.InternRepository;
 import com.wissen.ims.repository.UserRepository;
 import com.wissen.ims.security.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +26,9 @@ public class AuthService {
 
     @Autowired
     private CollegeRepository collegeRepository;
+
+    @Autowired
+    private InternRepository internRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -48,12 +53,23 @@ public class AuthService {
         User user = userRepository.findByEmail(loginRequest.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Get college name for COLLEGE user type
+        // Get college info for COLLEGE user type
         String collegeName = null;
+        Long collegeId = null;
         if (user.getUserType() == User.UserType.COLLEGE && user.getCollegeId() != null) {
+            collegeId = user.getCollegeId();
             College college = collegeRepository.findById(user.getCollegeId()).orElse(null);
             if (college != null) {
                 collegeName = college.getName();
+            }
+        }
+
+        // Get intern ID for INTERN user type
+        Long internId = null;
+        if (user.getUserType() == User.UserType.INTERN) {
+            Intern intern = internRepository.findByEmail(user.getEmail()).orElse(null);
+            if (intern != null) {
+                internId = intern.getId();
             }
         }
 
@@ -62,7 +78,9 @@ public class AuthService {
                 .email(user.getEmail())
                 .name(user.getFullName())
                 .userType(user.getUserType().name())
+                .collegeId(collegeId)
                 .collegeName(collegeName)
+                .internId(internId)
                 .build();
     }
 

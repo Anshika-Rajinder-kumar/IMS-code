@@ -89,6 +89,12 @@ const StudentUpload = () => {
       setUploadProgress(50);
       const createdCandidate = await api.createCandidate(candidateData);
       
+      // Upload resume if provided
+      if (formData.resumeFile) {
+        setUploadProgress(75);
+        await api.uploadCandidateResume(createdCandidate.id, formData.resumeFile);
+      }
+      
       setUploadProgress(100);
       await fetchStudents();
       setShowModal(false);
@@ -236,9 +242,16 @@ const StudentUpload = () => {
                         {student.hiringStatus || 'PENDING'}
                       </td>
                       <td>
-                        <button className="btn btn-sm btn-outline">
-                          📄 View Resume
-                        </button>
+                        {student.resumeUrl ? (
+                          <button 
+                            className="btn btn-sm btn-outline"
+                            onClick={() => window.open(api.getCandidateResumeUrl(student.id), '_blank')}
+                          >
+                            📄 View Resume
+                          </button>
+                        ) : (
+                          <span style={{ color: '#9ca3af', fontSize: '14px' }}>No resume</span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -364,7 +377,7 @@ const StudentUpload = () => {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Upload Resume</label>
+                    <label className="form-label">Upload Resume *</label>
                     <div className="file-upload-area">
                       <input
                         type="file"
@@ -373,6 +386,7 @@ const StudentUpload = () => {
                         accept=".pdf,.doc,.docx"
                         id="resumeFile"
                         style={{ display: 'none' }}
+                        required
                       />
                       <label htmlFor="resumeFile" className="file-upload-label">
                         <div className="file-upload-icon">📄</div>

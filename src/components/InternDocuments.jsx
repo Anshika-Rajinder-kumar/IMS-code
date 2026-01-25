@@ -84,7 +84,11 @@ const InternDocuments = () => {
     if (userData) {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
-      fetchDocuments(parsedUser.id);
+      if (parsedUser.internId) {
+        fetchDocuments(parsedUser.internId);
+      } else {
+        alert('Intern ID not found. Please log out and log in again.');
+      }
     }
   }, []);
 
@@ -124,7 +128,7 @@ const InternDocuments = () => {
     try {
       setLoading(true);
       await api.uploadDocument(
-        user.id,
+        user.internId,
         selectedDoc.name,
         selectedDoc.label,
         selectedDoc.icon,
@@ -134,7 +138,7 @@ const InternDocuments = () => {
       );
 
       // Refresh documents
-      await fetchDocuments(user.id);
+      await fetchDocuments(user.internId);
       
       setShowUploadModal(false);
       setUploadFile(null);
@@ -159,7 +163,7 @@ const InternDocuments = () => {
       try {
         setLoading(true);
         await api.deleteDocument(docId);
-        await fetchDocuments(user.id);
+        await fetchDocuments(user.internId);
         alert('Document deleted successfully');
       } catch (error) {
         console.error('Error deleting document:', error);

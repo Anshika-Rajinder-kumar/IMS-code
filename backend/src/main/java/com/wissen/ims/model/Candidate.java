@@ -45,8 +45,14 @@ public class Candidate {
     @Column(nullable = false)
     private String cgpa;
 
+    @Column
+    private Integer graduationYear;
+
     @Column(length = 500)
     private String address;
+
+    @Column(length = 500)
+    private String resumeUrl; // Path to uploaded resume file
 
     @Column(length = 100)
     private String hiringRound; // Current hiring round: "Applied", "Technical Round 1", "HR Round", etc.
@@ -74,7 +80,8 @@ public class Candidate {
         PENDING,
         IN_PROGRESS,
         CLEARED,
-        REJECTED
+        REJECTED,
+        ON_HOLD
     }
 
     public enum CandidateStatus {

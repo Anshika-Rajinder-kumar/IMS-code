@@ -144,6 +144,16 @@ public class InternService {
         return internRepository.save(intern);
     }
 
+    public Intern updateInternHiringStatus(Long id, String hiringRound, Intern.HiringStatus hiringStatus, Integer hiringScore) {
+        Intern intern = getInternById(id);
+        intern.setHiringRound(hiringRound);
+        intern.setHiringStatus(hiringStatus);
+        if (hiringScore != null) {
+            intern.setHiringScore(hiringScore);
+        }
+        return internRepository.save(intern);
+    }
+
     public void deleteIntern(Long id) {
         Intern intern = getInternById(id);
         internRepository.delete(intern);

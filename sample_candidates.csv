@@ -1,0 +1,6 @@
+name,email,phone,branch,cgpa,graduationYear,emergencyContact,address,resumePath
+John Doe,john.doe@example.com,9876543210,Computer Science,8.5,2026,9876543211,"123 Main St, New York",resumes/john_doe_resume.pdf
+Jane Smith,jane.smith@example.com,9876543212,Information Technology,9.0,2025,9876543213,"456 Park Ave, Boston",resumes/jane_smith_resume.pdf
+Alice Johnson,alice.johnson@example.com,9876543214,Electronics,8.2,2026,9876543215,"789 Oak Dr, Chicago",resumes/alice_johnson_resume.pdf
+Bob Wilson,bob.wilson@example.com,9876543216,Mechanical,7.8,2027,9876543217,"321 Elm St, Seattle",resumes/bob_wilson_resume.pdf
+Carol Davis,carol.davis@example.com,9876543218,Civil Engineering,8.7,2025,9876543219,"654 Pine Rd, Austin",resumes/carol_davis_resume.pdf

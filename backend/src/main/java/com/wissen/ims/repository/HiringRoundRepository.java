@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface HiringRoundRepository extends JpaRepository<HiringRound, Long> {
@@ -13,4 +14,5 @@ public interface HiringRoundRepository extends JpaRepository<HiringRound, Long> 
     List<HiringRound> findByInternId(Long internId);
     List<HiringRound> findByStatus(HiringRound.RoundStatus status);
     List<HiringRound> findByInternAndStatus(Intern intern, HiringRound.RoundStatus status);
+    Optional<HiringRound> findByInternIdAndRoundName(Long internId, String roundName);
 }

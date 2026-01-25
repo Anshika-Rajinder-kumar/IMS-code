@@ -1,18 +1,31 @@
 package com.wissen.ims.controller;
 
 import com.wissen.ims.dto.ApiResponse;
+import com.wissen.ims.dto.BulkUploadResponse;
 import com.wissen.ims.model.Candidate;
 import com.wissen.ims.model.Intern;
 import com.wissen.ims.service.CandidateService;
+import com.wissen.ims.service.CSVService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/candidates")
@@ -20,6 +33,9 @@ public class CandidateController {
 
     @Autowired
     private CandidateService candidateService;
+
+    @Autowired
+    private CSVService csvService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<Candidate>>> getAllCandidates() {
@@ -132,4 +148,116 @@ public class CandidateController {
                     .body(ApiResponse.error(e.getMessage()));
         }
     }
+
+    @PostMapping("/{id}/upload-resume")
+    public ResponseEntity<ApiResponse<Candidate>> uploadResume(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            if (file.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponse.error("Please select a file to upload"));
+            }
+
+            // Create upload directory if it doesn't exist
+            String uploadDir = "uploads/resumes/";
+            Path uploadPath = Paths.get(uploadDir);
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+
+            // Generate unique filename
+            String originalFilename = file.getOriginalFilename();
+            String fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            String newFilename = "candidate_" + id + fileExtension;
+            
+            // Save file
+            Path filePath = uploadPath.resolve(newFilename);
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+            // Update candidate with resume filename
+            Candidate candidate = candidateService.getCandidateById(id);
+            candidate.setResumeUrl(newFilename);
+            Candidate updatedCandidate = candidateService.updateCandidate(id, candidate);
+
+            return ResponseEntity.ok(ApiResponse.success(updatedCandidate));
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to upload file: " + e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @GetMapping("/{id}/resume")
+    public ResponseEntity<Resource> downloadResume(@PathVariable Long id) {
+        try {
+            Candidate candidate = candidateService.getCandidateById(id);
+            
+            if (candidate.getResumeUrl() == null || candidate.getResumeUrl().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+
+            // Get the file path using the stored filename
+            String uploadDir = "uploads/resumes/";
+            Path filePath = Paths.get(uploadDir).resolve(candidate.getResumeUrl()).normalize();
+            
+            Resource resource = new UrlResource(filePath.toUri());
+            
+            if (resource.exists() && resource.isReadable()) {
+                // Determine content type
+                String contentType = Files.probeContentType(filePath);
+                if (contentType == null) {
+                    contentType = "application/octet-stream";
+                }
+                
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(contentType))
+                        .header(HttpHeaders.CONTENT_DISPOSITION, 
+                                "inline; filename=\"" + resource.getFilename() + "\"")
+                        .body(resource);
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/bulk-upload")
+    public ResponseEntity<ApiResponse<BulkUploadResponse>> bulkUploadCandidates(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("collegeId") Long collegeId,
+            @RequestParam("collegeName") String collegeName) {
+        
+        try {
+            // Validate file
+            if (file.isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error("Please upload a CSV file"));
+            }
+            
+            if (!file.getOriginalFilename().endsWith(".csv")) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error("Only CSV files are allowed"));
+            }
+            
+            BulkUploadResponse response = csvService.processCandidateCSV(file, collegeId, collegeName);
+            
+            // Always return the response with details, use appropriate status code
+            if (response.getSuccessCount() > 0) {
+                return ResponseEntity.ok(ApiResponse.success(response));
+            } else {
+                // Even if all failed, return 200 with the detailed response
+                return ResponseEntity.ok(ApiResponse.success(response));
+            }
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to process CSV file: " + e.getMessage()));
+        }
+    }
 }
+

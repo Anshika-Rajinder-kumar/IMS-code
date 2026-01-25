@@ -11,6 +11,7 @@ import InternDocuments from './components/InternDocuments';
 import InternOffer from './components/InternOffer';
 import HiringRounds from './components/HiringRounds';
 import StudentUpload from './components/StudentUpload';
+import BulkUpload from './components/BulkUpload';
 import HiringStatus from './components/HiringStatus';
 import LearningProgress from './components/LearningProgress';
 import Settings from './components/Settings';
@@ -99,6 +100,14 @@ function App() {
           element={
             <PrivateRoute>
               <StudentUpload />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/bulk-upload"
+          element={
+            <PrivateRoute>
+              <BulkUpload />
             </PrivateRoute>
           }
         />

@@ -184,6 +184,14 @@ class ApiService {
     return this.patch(`/interns/${id}/status?status=${status}`);
   }
 
+  async updateInternHiringStatus(id, hiringRound, hiringStatus, hiringScore) {
+    let url = `/interns/${id}/hiring-status?hiringRound=${encodeURIComponent(hiringRound)}&hiringStatus=${hiringStatus}`;
+    if (hiringScore !== null && hiringScore !== undefined) {
+      url += `&hiringScore=${hiringScore}`;
+    }
+    return this.patch(url);
+  }
+
   async deleteIntern(id) {
     return this.delete(`/interns/${id}`);
   }
@@ -231,6 +239,30 @@ class ApiService {
 
   async convertCandidateToIntern(candidateId, joinDate) {
     return this.post(`/candidates/${candidateId}/convert-to-intern`, { joinDate });
+  }
+
+  async uploadCandidateResume(candidateId, file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.uploadFile(`/candidates/${candidateId}/upload-resume`, formData);
+  }
+
+  getCandidateResumeUrl(candidateId) {
+    const token = this.getAuthToken();
+    return `${this.baseURL}/candidates/${candidateId}/resume?token=${token}`;
+  }
+
+  async bulkUploadCandidates(formData) {
+    return this.uploadFile('/candidates/bulk-upload', formData);
+  }
+
+  // Candidate Hiring Round APIs
+  async getCandidateHiringRoundsByCandidateId(candidateId) {
+    return this.get(`/candidate-hiring-rounds/candidate/${candidateId}`);
+  }
+
+  async createOrUpdateCandidateHiringRound(candidateHiringRound) {
+    return this.post('/candidate-hiring-rounds/create-or-update', candidateHiringRound);
   }
 
   // Document APIs
@@ -328,6 +360,10 @@ class ApiService {
 
   async createHiringRound(hiringRound) {
     return this.post('/hiring-rounds', hiringRound);
+  }
+
+  async createOrUpdateHiringRound(hiringRound) {
+    return this.post('/hiring-rounds/create-or-update', hiringRound);
   }
 
   async updateHiringRound(id, hiringRound) {

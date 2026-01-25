@@ -43,6 +43,7 @@ const Sidebar = () => {
     } else if (userType === 'COLLEGE') {
       return [
         { path: '/students', icon: '👨‍🎓', label: 'Students' },
+        { path: '/bulk-upload', icon: '📤', label: 'Bulk Upload' },
         { path: '/hiring-status', icon: '📋', label: 'Hiring Status' },
         { path: '/settings', icon: '⚙️', label: 'Settings' }
       ];

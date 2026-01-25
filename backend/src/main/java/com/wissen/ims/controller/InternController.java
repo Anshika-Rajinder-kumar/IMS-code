@@ -89,6 +89,22 @@ public class InternController {
         }
     }
 
+    @PatchMapping("/{id}/hiring-status")
+    public ResponseEntity<ApiResponse<Intern>> updateInternHiringStatus(
+            @PathVariable Long id,
+            @RequestParam String hiringRound,
+            @RequestParam String hiringStatus,
+            @RequestParam(required = false) Integer hiringScore) {
+        try {
+            Intern.HiringStatus status = Intern.HiringStatus.valueOf(hiringStatus.toUpperCase());
+            Intern updatedIntern = internService.updateInternHiringStatus(id, hiringRound, status, hiringScore);
+            return ResponseEntity.ok(ApiResponse.success(updatedIntern));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteIntern(@PathVariable Long id) {
         try {

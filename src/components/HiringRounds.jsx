@@ -40,8 +40,12 @@ const HiringRounds = () => {
       const candidatesData = await api.getCandidates();
       const internsData = await api.getInterns();
       
+      // Filter out SELECTED candidates (they've been converted to interns)
+      // Only show candidates who are still in the recruitment pipeline
+      const activeCandidates = candidatesData.filter(c => c.status !== 'SELECTED');
+      
       // Mark candidates with type for distinction
-      const markedCandidates = candidatesData.map(c => ({ ...c, type: 'CANDIDATE' }));
+      const markedCandidates = activeCandidates.map(c => ({ ...c, type: 'CANDIDATE' }));
       const markedInterns = internsData.map(i => ({ ...i, type: 'INTERN' }));
       
       // Combine both lists
@@ -84,7 +88,22 @@ const HiringRounds = () => {
   const handleRowClick = async (candidate) => {
     setSelectedCandidate(candidate);
     setShowHistoryModal(true);
-    await fetchHiringHistory(candidate.id);
+    // Fetch history based on type
+    if (candidate.type === 'INTERN') {
+      await fetchHiringHistory(candidate.id);
+    } else {
+      // Fetch candidate hiring round history
+      try {
+        setLoading(true);
+        const data = await api.getCandidateHiringRoundsByCandidateId(candidate.id);
+        setHiringHistory(data);
+      } catch (error) {
+        console.error('Error fetching candidate history:', error);
+        setHiringHistory([]);
+      } finally {
+        setLoading(false);
+      }
+    }
   };
 
   const handleSubmitUpdate = async (e) => {
@@ -95,39 +114,72 @@ const HiringRounds = () => {
 
       const isCandidate = selectedCandidate.type === 'CANDIDATE';
       
-      // If marking as "Selected" and it's a candidate, convert to intern first
-      if (statusUpdate.round === 'Selected' && isCandidate) {
-        const joinDate = prompt('Enter join date for the intern (YYYY-MM-DD):');
-        if (!joinDate) {
+      // For candidates, update candidate status
+      if (isCandidate) {
+        // If marking as "Selected" with status "CLEARED", convert to intern
+        if (statusUpdate.round === 'Selected' && statusUpdate.status === 'CLEARED') {
+          const joinDate = prompt('Candidate will be converted to intern. Enter join date (YYYY-MM-DD):');
+          if (!joinDate) {
+            setLoading(false);
+            return;
+          }
+          
+          // Convert candidate to intern
+          const newIntern = await api.convertCandidateToIntern(selectedCandidate.id, joinDate);
+          
+          // Update the new intern's hiring status to Selected/CLEARED
+          await api.updateInternHiringStatus(
+            newIntern.id,
+            statusUpdate.round,
+            statusUpdate.status,
+            statusUpdate.score ? Number.parseFloat(statusUpdate.score) : null
+          );
+          
+          alert('Candidate converted to intern successfully! Credentials sent via email.');
+          
+          // Refresh the list and close modal
+          await fetchCandidatesAndInterns();
+          setShowModal(false);
+          setSelectedCandidate(null);
           setLoading(false);
           return;
         }
         
-        // Convert candidate to intern
-        await api.convertCandidateToIntern(selectedCandidate.id, joinDate);
-        alert('Candidate converted to intern successfully! Credentials sent via email.');
-        
-        // Refresh the list
-        await fetchCandidatesAndInterns();
-        setShowModal(false);
-        setSelectedCandidate(null);
-        setLoading(false);
-        return;
-      }
-
-      // For candidates (not being selected), update candidate status
-      if (isCandidate) {
-        // Map hiring round to candidate status
+        // For other statuses, just update the candidate
+        // Map hiring status - keep the actual round status (ON_HOLD, CLEARED, etc.)
         let candidateStatus = 'APPLIED';
         if (statusUpdate.round.includes('Aptitude')) candidateStatus = 'SCREENING';
         else if (statusUpdate.round.includes('Technical') || statusUpdate.round.includes('HR')) candidateStatus = 'INTERVIEWING';
         else if (statusUpdate.status === 'REJECTED') candidateStatus = 'REJECTED';
         
+        // Create or update candidate hiring round entry
+        const candidateRound = {
+          candidate: { 
+            id: selectedCandidate.id,
+            name: selectedCandidate.name,
+            email: selectedCandidate.email
+          },
+          roundName: statusUpdate.round,
+          status: statusUpdate.status,
+          score: statusUpdate.score ? Number.parseFloat(statusUpdate.score) : null,
+          feedback: statusUpdate.feedback || '',
+          interviewer: localStorage.getItem('userName') || 'Admin',
+          scheduledAt: new Date().toISOString(),
+          completedAt: statusUpdate.status !== 'PENDING' && statusUpdate.status !== 'ON_HOLD' ? new Date().toISOString() : null
+        };
+
+        try {
+          await api.createOrUpdateCandidateHiringRound(candidateRound);
+        } catch (error) {
+          console.error('Error creating hiring round:', error);
+          // Continue even if history creation fails
+        }
+        
         await api.updateCandidate(selectedCandidate.id, {
           ...selectedCandidate,
           hiringRound: statusUpdate.round,
-          hiringStatus: statusUpdate.status,
-          hiringScore: statusUpdate.score ? parseFloat(statusUpdate.score) : selectedCandidate.hiringScore,
+          hiringStatus: statusUpdate.status, // Use the actual status (ON_HOLD, CLEARED, PENDING, etc.)
+          hiringScore: statusUpdate.score ? Number.parseFloat(statusUpdate.score) : selectedCandidate.hiringScore,
           status: candidateStatus
         });
         
@@ -139,7 +191,7 @@ const HiringRounds = () => {
         return;
       }
 
-      // For interns, create hiring round and update intern
+      // For interns, create or update hiring round
       const newRound = {
         intern: { id: selectedCandidate.id },
         roundName: statusUpdate.round,
@@ -151,15 +203,15 @@ const HiringRounds = () => {
         completedAt: statusUpdate.status !== 'PENDING' ? new Date().toISOString() : null
       };
 
-      await api.createHiringRound(newRound);
+      await api.createOrUpdateHiringRound(newRound);
 
       // Update intern's hiring status
-      await api.updateIntern(selectedCandidate.id, {
-        ...selectedCandidate,
-        hiringRound: statusUpdate.round,
-        hiringStatus: statusUpdate.status,
-        hiringScore: statusUpdate.score ? parseFloat(statusUpdate.score) : selectedCandidate.hiringScore
-      });
+      await api.updateInternHiringStatus(
+        selectedCandidate.id,
+        statusUpdate.round,
+        statusUpdate.status,
+        statusUpdate.score ? parseFloat(statusUpdate.score) : null
+      );
 
       // Refresh the candidates list
       await fetchCandidatesAndInterns();
@@ -342,12 +394,25 @@ const HiringRounds = () => {
                       )}
                     </td>
                     <td>
-                      <button
-                        className="btn btn-sm btn-primary"
-                        onClick={(e) => handleUpdateStatus(candidate, e)}
-                      >
-                        Update Status
-                      </button>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <button
+                          className="btn btn-sm btn-primary"
+                          onClick={(e) => handleUpdateStatus(candidate, e)}
+                        >
+                          Update Status
+                        </button>
+                        {candidate.type === 'CANDIDATE' && candidate.resumeUrl && (
+                          <button
+                            className="btn btn-sm btn-outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open(api.getCandidateResumeUrl(candidate.id), '_blank');
+                            }}
+                          >
+                            📄 View Resume
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))

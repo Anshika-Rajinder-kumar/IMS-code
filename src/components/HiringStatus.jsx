@@ -14,6 +14,7 @@ const HiringStatus = () => {
   const [showModal, setShowModal] = useState(false);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hiringHistory, setHiringHistory] = useState([]);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -27,12 +28,15 @@ const HiringStatus = () => {
   const fetchStudents = async (userData) => {
     try {
       setLoading(true);
-      const data = await api.getInterns();
+      // Fetch both candidates and interns
+      const candidatesData = await api.getCandidates();
+      const internsData = await api.getInterns();
       
-      // Filter students from the same college if user is college type
+      // Combine and filter by college if college user
+      const combined = [...candidatesData, ...internsData];
       const filteredData = userData.userType === 'COLLEGE' && userData.collegeName
-        ? data.filter(student => student.collegeName && student.collegeName === userData.collegeName)
-        : data;
+        ? combined.filter(student => student.collegeName && student.collegeName === userData.collegeName)
+        : combined;
       
       setStudents(filteredData);
     } catch (error) {
@@ -76,16 +80,31 @@ const HiringStatus = () => {
 
   const rounds = ['Aptitude Test', 'Technical Round 1', 'Technical Round 2', 'HR Round', 'Selected', 'Rejected'];
 
+  const viewDetails = async (student) => {
+    setSelectedStudent(student);
+    setShowModal(true);
+    // Fetch hiring history based on student type
+    try {
+      if (student.joiningDate) {
+        // It's an intern
+        const history = await api.getHiringRoundsByIntern(student.id);
+        setHiringHistory(history);
+      } else {
+        // It's a candidate
+        const history = await api.getCandidateHiringRoundsByCandidateId(student.id);
+        setHiringHistory(history);
+      }
+    } catch (error) {
+      console.error('Error fetching hiring history:', error);
+      setHiringHistory([]);
+    }
+  };
+
   const stats = {
     total: students.length,
     selected: students.filter(s => s.hiringRound === 'Selected').length,
     pending: students.filter(s => s.hiringStatus === 'PENDING').length,
     rejected: students.filter(s => s.hiringStatus === 'REJECTED').length
-  };
-
-  const viewDetails = (student) => {
-    setSelectedStudent(student);
-    setShowModal(true);
   };
 
   if (!user) return null;
@@ -214,7 +233,7 @@ const HiringStatus = () => {
                     </div>
                     <div className="detail-row">
                       <span className="detail-icon">📅</span>
-                      <span className="detail-text">Class of {student.graduationYear}</span>
+                      <span className="detail-text">Class of {student.graduationYear || 'N/A'}</span>
                     </div>
                     <div className="detail-row">
                       <span className="detail-icon">📞</span>
@@ -318,14 +337,44 @@ const HiringStatus = () => {
                 </div>
 
                 <div className="info-section">
-                  <h3 className="section-title">⏱️ Timeline</h3>
-                  <div className="timeline-item">
-                    <span className="timeline-dot"></span>
-                    <div>
-                      <div className="timeline-title">Last Updated</div>
-                      <div className="timeline-date">{selectedStudent.updatedAt ? new Date(selectedStudent.updatedAt).toLocaleDateString('en-IN') : 'N/A'}</div>
+                  <h3 className="section-title">⏱️ Hiring Timeline</h3>
+                  {hiringHistory.length === 0 ? (
+                    <div className="timeline-item">
+                      <span className="timeline-dot"></span>
+                      <div>
+                        <div className="timeline-title">No hiring rounds yet</div>
+                        <div className="timeline-date">Application received on {selectedStudent.createdAt ? new Date(selectedStudent.createdAt).toLocaleDateString('en-IN') : 'N/A'}</div>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    hiringHistory.map((round, index) => (
+                      <div key={round.id} className="timeline-item">
+                        <span className="timeline-dot" style={{ backgroundColor: round.status === 'CLEARED' ? '#10b981' : round.status === 'REJECTED' ? '#ef4444' : '#f59e0b' }}></span>
+                        <div>
+                          <div className="timeline-title">{round.roundName}</div>
+                          <div className="timeline-date">
+                            {round.completedAt ? new Date(round.completedAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Scheduled'}
+                          </div>
+                          <div className="timeline-details">
+                            <span className={`status-badge ${getStatusBadge(round.status).class}`}>
+                              {getStatusBadge(round.status).icon} {round.status}
+                            </span>
+                            {round.score && <span className="score-badge">{round.score}%</span>}
+                          </div>
+                          {round.feedback && (
+                            <div className="timeline-feedback">
+                              <em>"{round.feedback}"</em>
+                            </div>
+                          )}
+                          {round.interviewer && (
+                            <div className="timeline-interviewer">
+                              👤 {round.interviewer}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>

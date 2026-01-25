@@ -43,6 +43,35 @@ public class HiringRoundService {
         return hiringRoundRepository.save(hiringRound);
     }
 
+    public HiringRound createOrUpdateHiringRound(HiringRound hiringRound) {
+        // Check if a hiring round already exists for this intern and round name
+        if (hiringRound.getIntern() != null && hiringRound.getRoundName() != null) {
+            var existingRound = hiringRoundRepository.findByInternIdAndRoundName(
+                hiringRound.getIntern().getId(), 
+                hiringRound.getRoundName()
+            );
+            
+            if (existingRound.isPresent()) {
+                // Update existing round
+                HiringRound existing = existingRound.get();
+                existing.setStatus(hiringRound.getStatus());
+                existing.setScore(hiringRound.getScore());
+                existing.setFeedback(hiringRound.getFeedback());
+                existing.setInterviewer(hiringRound.getInterviewer());
+                existing.setScheduledAt(hiringRound.getScheduledAt());
+                existing.setCompletedAt(hiringRound.getCompletedAt());
+                existing.setDuration(hiringRound.getDuration());
+                return hiringRoundRepository.save(existing);
+            }
+        }
+        
+        // Create new round if it doesn't exist
+        if (hiringRound.getStatus() == null) {
+            hiringRound.setStatus(HiringRound.RoundStatus.PENDING);
+        }
+        return hiringRoundRepository.save(hiringRound);
+    }
+
     public HiringRound updateHiringRound(Long id, HiringRound hiringRoundDetails) {
         HiringRound hiringRound = getHiringRoundById(id);
         

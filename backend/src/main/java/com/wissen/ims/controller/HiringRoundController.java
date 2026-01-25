@@ -64,6 +64,17 @@ public class HiringRoundController {
         }
     }
 
+    @PostMapping("/create-or-update")
+    public ResponseEntity<ApiResponse<HiringRound>> createOrUpdateHiringRound(@RequestBody HiringRound hiringRound) {
+        try {
+            HiringRound savedHiringRound = hiringRoundService.createOrUpdateHiringRound(hiringRound);
+            return ResponseEntity.ok(ApiResponse.success(savedHiringRound));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<HiringRound>> updateHiringRound(
             @PathVariable Long id, 

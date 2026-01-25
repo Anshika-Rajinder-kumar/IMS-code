@@ -11,23 +11,23 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "hiring_rounds")
+@Table(name = "candidate_hiring_rounds")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
-public class HiringRound {
+public class CandidateHiringRound {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "intern_id", nullable = false)
-    private Intern intern;
+    @JoinColumn(name = "candidate_id", nullable = false)
+    private Candidate candidate;
 
     @Column(nullable = false, length = 100)
-    private String roundName; // Technical Round 1, HR Round, etc.
+    private String roundName; // Applied, Aptitude Test, Technical Round 1, etc.
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

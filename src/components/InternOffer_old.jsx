@@ -1,14 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import api from '../services/api';
 import './Offers.css';
 
 const InternOffer = () => {
-  const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [internData, setInternData] = useState(null);
-  const [documents, setDocuments] = useState([]);
   const [offerData, setOfferData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
@@ -18,41 +14,18 @@ const InternOffer = () => {
     if (userData) {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
-      if (parsedUser.internId) {
-        fetchInternData(parsedUser.internId);
-        fetchDocuments(parsedUser.internId);
-        fetchOffer(parsedUser.internId);
-      } else {
-        alert('Intern ID not found. Please log out and log in again.');
-        setLoading(false);
-      }
+      fetchOffer(parsedUser.id);
     }
   }, []);
 
-  const fetchInternData = async (internId) => {
-    try {
-      const data = await api.getInternById(internId);
-      setInternData(data);
-    } catch (error) {
-      console.error('Error fetching intern data:', error);
-    }
-  };
-
-  const fetchDocuments = async (internId) => {
-    try {
-      const data = await api.getDocumentsByInternId(internId);
-      setDocuments(data);
-    } catch (error) {
-      console.error('Error fetching documents:', error);
-    }
-  };
-
   const fetchOffer = async (internId) => {
     try {
+      setLoading(true);
       const data = await api.getLatestOfferByInternId(internId);
       setOfferData(data);
     } catch (error) {
       console.error('Error fetching offer:', error);
+      // Offer not found is not an error - intern may not have offer yet
       setOfferData(null);
     } finally {
       setLoading(false);
@@ -61,7 +34,9 @@ const InternOffer = () => {
 
   const handleDownload = () => {
     if (!offerData) return;
-    window.open(api.getOfferDownloadUrl(offerData.id), '_blank');
+    alert('Downloading offer letter as PDF...');
+    // In real implementation, trigger PDF download from backend
+    // window.location.href = api.baseURL + '/offers/' + offerData.id + '/download';
   };
 
   const handleAccept = async () => {
@@ -69,8 +44,7 @@ const InternOffer = () => {
     if (confirmed) {
       try {
         await api.acceptOffer(offerData.id);
-        await fetchOffer(user.internId);
-        await fetchInternData(user.internId);
+        await fetchOffer(user.id); // Refresh offer data
         alert('🎉 Congratulations! You have accepted the offer. HR will contact you soon with next steps.');
       } catch (error) {
         console.error('Error accepting offer:', error);
@@ -84,7 +58,7 @@ const InternOffer = () => {
     if (confirmed) {
       try {
         await api.rejectOffer(offerData.id);
-        await fetchOffer(user.internId);
+        await fetchOffer(user.id); // Refresh offer data
         alert('Offer declined. Thank you for your time.');
       } catch (error) {
         console.error('Error declining offer:', error);
@@ -93,25 +67,7 @@ const InternOffer = () => {
     }
   };
 
-  // Calculate document upload progress
-  const getDocumentStats = () => {
-    const requiredDocs = ['AADHAAR', 'PAN', 'CLASS_10', 'CLASS_12', 'DEGREE', 'PHOTO', 'BANK_PASSBOOK'];
-    const uploadedDocs = documents.filter(doc => requiredDocs.includes(doc.name));
-    const verifiedDocs = uploadedDocs.filter(doc => doc.status === 'VERIFIED');
-    const pendingDocs = uploadedDocs.filter(doc => doc.status === 'PENDING');
-    const rejectedDocs = uploadedDocs.filter(doc => doc.status === 'REJECTED');
-    
-    return {
-      total: requiredDocs.length,
-      uploaded: uploadedDocs.length,
-      verified: verifiedDocs.length,
-      pending: pendingDocs.length,
-      rejected: rejectedDocs.length,
-      allUploaded: uploadedDocs.length === requiredDocs.length,
-      allVerified: verifiedDocs.length === requiredDocs.length
-    };
-  };
-
+  // Show loading state
   if (loading) {
     return (
       <div className="dashboard-container">
@@ -119,7 +75,7 @@ const InternOffer = () => {
         <main className="main-content">
           <header className="dashboard-header">
             <div>
-              <h1 className="page-title">📜 My Offer Letter</h1>
+              <h1 className="page-title">My Offer Letter</h1>
               <p className="page-subtitle">View and manage your internship offer</p>
             </div>
           </header>
@@ -132,8 +88,15 @@ const InternOffer = () => {
     );
   }
 
-  const docStats = getDocumentStats();
-  const internStatus = internData?.status || 'DOCUMENT_PENDING';
+  // Determine offer status
+  const getOfferStatus = () => {
+    if (!offerData) return 'IN_PROGRESS';
+    if (offerData.status === 'ACCEPTED') return 'ACCEPTED';
+    if (offerData.status === 'GENERATED' || offerData.status === 'SENT') return 'GENERATED';
+    return 'IN_PROGRESS';
+  };
+
+  const offerStatus = getOfferStatus();
 
   return (
     <div className="dashboard-container">
@@ -142,161 +105,42 @@ const InternOffer = () => {
       <main className="main-content">
         <header className="dashboard-header">
           <div>
-            <h1 className="page-title">📜 My Offer Letter</h1>
+            <h1 className="page-title">My Offer Letter</h1>
             <p className="page-subtitle">View and manage your internship offer</p>
           </div>
         </header>
 
-        {/* Status: Documents Not Uploaded */}
-        {internStatus === 'DOCUMENT_PENDING' && !docStats.allUploaded && (
+        {/* Offer Status */}
+        {offerStatus === 'IN_PROGRESS' && (
           <div className="card" style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <div style={{ fontSize: '80px', marginBottom: '24px' }}>📄</div>
-            <h2 style={{ marginBottom: '12px', color: '#333' }}>Documents Required</h2>
+            <div style={{ fontSize: '80px', marginBottom: '24px' }}>⏳</div>
+            <h2 style={{ marginBottom: '12px', color: '#333' }}>Offer Letter Generation in Progress</h2>
             <p style={{ color: '#666', fontSize: '16px', maxWidth: '600px', margin: '0 auto 24px' }}>
-              Please upload all required documents to proceed with your offer letter generation.
+              Your documents have been verified and you're doing great! Our HR team is currently preparing your offer letter. 
+              You will be notified once it's ready.
             </p>
-            
-            <div style={{
-              display: 'inline-block',
-              padding: '20px 32px',
-              background: '#fef3c7',
-              border: '2px solid #fbbf24',
-              borderRadius: '12px',
-              marginBottom: '24px'
-            }}>
-              <div style={{ fontSize: '32px', fontWeight: '700', color: '#92400e', marginBottom: '4px' }}>
-                {docStats.uploaded} / {docStats.total}
-              </div>
-              <div style={{ fontSize: '14px', color: '#78350f' }}>Documents Uploaded</div>
-            </div>
-
-            <div>
-              <button 
-                className="btn btn-primary" 
-                style={{ padding: '12px 32px', fontSize: '16px' }}
-                onClick={() => navigate('/documents')}
-              >
-                📤 Upload Documents
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Status: Documents Uploaded - Under Verification */}
-        {docStats.allUploaded && !docStats.allVerified && (
-          <div className="card" style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <div style={{ fontSize: '80px', marginBottom: '24px' }}>🔍</div>
-            <h2 style={{ marginBottom: '12px', color: '#333' }}>Documents Under Verification</h2>
-            <p style={{ color: '#666', fontSize: '16px', maxWidth: '600px', margin: '0 auto 24px' }}>
-              All required documents have been uploaded successfully! Our HR team is currently reviewing them.
-            </p>
-            
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginBottom: '24px' }}>
-              <div style={{
-                padding: '16px 24px',
-                background: '#dcfce7',
-                border: '2px solid #10b981',
-                borderRadius: '12px',
-                minWidth: '150px'
-              }}>
-                <div style={{ fontSize: '28px', fontWeight: '700', color: '#065f46' }}>
-                  {docStats.verified}
-                </div>
-                <div style={{ fontSize: '14px', color: '#065f46' }}>✅ Verified</div>
-              </div>
-
-              <div style={{
-                padding: '16px 24px',
-                background: '#fef3c7',
-                border: '2px solid #fbbf24',
-                borderRadius: '12px',
-                minWidth: '150px'
-              }}>
-                <div style={{ fontSize: '28px', fontWeight: '700', color: '#92400e' }}>
-                  {docStats.pending}
-                </div>
-                <div style={{ fontSize: '14px', color: '#92400e' }}>⏳ Pending</div>
-              </div>
-
-              {docStats.rejected > 0 && (
-                <div style={{
-                  padding: '16px 24px',
-                  background: '#fee2e2',
-                  border: '2px solid #ef4444',
-                  borderRadius: '12px',
-                  minWidth: '150px'
-                }}>
-                  <div style={{ fontSize: '28px', fontWeight: '700', color: '#991b1b' }}>
-                    {docStats.rejected}
-                  </div>
-                  <div style={{ fontSize: '14px', color: '#991b1b' }}>❌ Rejected</div>
-                </div>
-              )}
-            </div>
-
-            {docStats.rejected > 0 && (
-              <div style={{
-                background: '#fee2e2',
-                border: '2px solid #ef4444',
-                borderRadius: '12px',
-                padding: '20px',
-                marginBottom: '24px',
-                maxWidth: '600px',
-                margin: '0 auto 24px'
-              }}>
-                <div style={{ fontSize: '24px', marginBottom: '8px' }}>⚠️</div>
-                <div style={{ fontWeight: '600', color: '#991b1b', marginBottom: '8px' }}>
-                  Some Documents Were Rejected
-                </div>
-                <div style={{ fontSize: '14px', color: '#7f1d1d', marginBottom: '16px' }}>
-                  Please re-upload the rejected documents to continue with verification.
-                </div>
-                <button 
-                  className="btn btn-danger"
-                  onClick={() => navigate('/documents')}
-                >
-                  📄 View & Re-upload Documents
-                </button>
-              </div>
-            )}
-
-            <p style={{ fontSize: '14px', color: '#999', fontStyle: 'italic' }}>
-              You will be notified once all documents are verified. Estimated time: 1-2 business days.
-            </p>
-          </div>
-        )}
-
-        {/* Status: Documents Verified - Offer Letter in Progress */}
-        {docStats.allVerified && !offerData && (
-          <div className="card" style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <div style={{ fontSize: '80px', marginBottom: '24px' }}>📝</div>
-            <h2 style={{ marginBottom: '12px', color: '#333' }}>Offer Letter Being Prepared</h2>
-            <p style={{ color: '#666', fontSize: '16px', maxWidth: '600px', margin: '0 auto 24px' }}>
-              Excellent! All your documents have been verified. Our HR team is now preparing your offer letter.
-            </p>
-            
             <div style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '12px',
               padding: '16px 24px',
-              background: '#dbeafe',
-              border: '2px solid #3b82f6',
+              background: '#fef3c7',
+              border: '2px solid #fbbf24',
               borderRadius: '12px',
               marginTop: '16px'
             }}>
               <span style={{ fontSize: '24px' }}>💼</span>
               <div style={{ textAlign: 'left' }}>
-                <div style={{ fontWeight: '600', color: '#1e40af' }}>All Documents Verified ✅</div>
-                <div style={{ fontSize: '14px', color: '#1e3a8a' }}>Offer letter will be ready within 2-3 business days</div>
+                <div style={{ fontWeight: '600', color: '#92400e' }}>Expected Timeline</div>
+                <div style={{ fontSize: '14px', color: '#78350f' }}>Your offer will be ready within 2-3 business days</div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Status: Offer Letter Generated */}
-        {offerData && offerData.status !== 'ACCEPTED' && (
+        {offerStatus === 'GENERATED' && (
           <>
+            {/* Offer Ready Banner */}
             <div style={{
               background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
               color: 'white',
@@ -314,8 +158,16 @@ const InternOffer = () => {
                   Congratulations! Your internship offer letter has been generated. Please review and accept it.
                 </p>
               </div>
+              <button 
+                className="btn"
+                style={{ background: 'white', color: '#059669' }}
+                onClick={() => setShowPreview(true)}
+              >
+                📄 View Offer
+              </button>
             </div>
 
+            {/* Offer Summary Card */}
             <div className="card">
               <div className="card-header">
                 <h3 className="card-title">Offer Summary</h3>
@@ -353,6 +205,15 @@ const InternOffer = () => {
                   
                   <div>
                     <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>
+                      Duration
+                    </div>
+                    <div style={{ fontSize: '16px', fontWeight: '600', color: '#333' }}>
+                      {offerData.duration}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>
                       Start Date
                     </div>
                     <div style={{ fontSize: '16px', fontWeight: '600', color: '#333' }}>
@@ -363,8 +224,51 @@ const InternOffer = () => {
                       })}
                     </div>
                   </div>
+                  
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>
+                      Location
+                    </div>
+                    <div style={{ fontSize: '16px', fontWeight: '600', color: '#333' }}>
+                      📍 {offerData.location}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>
+                      Work Mode
+                    </div>
+                    <div style={{ fontSize: '16px', fontWeight: '600', color: '#333' }}>
+                      {offerData.workMode}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>
+                      Reporting Manager
+                    </div>
+                    <div style={{ fontSize: '16px', fontWeight: '600', color: '#333' }}>
+                      {offerData.reportingManager}
+                    </div>
+                  </div>
                 </div>
 
+                {/* Benefits */}
+                {offerData?.benefits && offerData.benefits.length > 0 && (
+                  <div style={{ marginTop: '24px', padding: '20px', background: '#f9fafb', borderRadius: '8px' }}>
+                    <h4 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>🎁 Benefits & Perks</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                      {offerData.benefits.split(',').map((benefit, index) => (
+                        <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ color: '#10b981' }}>✓</span>
+                          <span>{benefit.trim()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
                 <div style={{ 
                   marginTop: '32px', 
                   padding: '20px', 
@@ -379,7 +283,7 @@ const InternOffer = () => {
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: '600', marginBottom: '4px' }}>📋 Action Required</div>
                     <div style={{ fontSize: '14px', color: '#666' }}>
-                      Please review the offer and take action.
+                      Please review the offer and take action. You can download, preview, or accept the offer.
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
@@ -399,9 +303,9 @@ const InternOffer = () => {
           </>
         )}
 
-        {/* Status: Offer Accepted */}
-        {offerData && offerData.status === 'ACCEPTED' && (
+        {offerStatus === 'ACCEPTED' && (
           <>
+            {/* Accepted Banner */}
             <div style={{
               background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
               color: 'white',
@@ -421,6 +325,7 @@ const InternOffer = () => {
               </p>
             </div>
 
+            {/* Next Steps */}
             <div className="card">
               <div className="card-header">
                 <h3 className="card-title">🚀 Next Steps</h3>
@@ -449,7 +354,7 @@ const InternOffer = () => {
                     <div>
                       <div style={{ fontWeight: '600', marginBottom: '4px' }}>HR will contact you</div>
                       <div style={{ fontSize: '14px', color: '#666' }}>
-                        Our HR team will reach out via email with onboarding details
+                        Our HR team will reach out via email with onboarding details and schedule
                       </div>
                     </div>
                   </div>
@@ -503,7 +408,7 @@ const InternOffer = () => {
                     <div>
                       <div style={{ fontWeight: '600', marginBottom: '4px' }}>Start your internship</div>
                       <div style={{ fontSize: '14px', color: '#666' }}>
-                        Join on {new Date(offerData.startDate).toLocaleDateString('en-IN')} and begin your journey!
+                        Join on {new Date(offerData.startDate).toLocaleDateString('en-IN')} and begin your exciting journey!
                       </div>
                     </div>
                   </div>
@@ -516,11 +421,33 @@ const InternOffer = () => {
                 </div>
               </div>
             </div>
+
+            {/* Contact Info */}
+            <div className="card" style={{ marginTop: '24px' }}>
+              <div className="card-header">
+                <h3 className="card-title">📞 Need Help?</h3>
+              </div>
+              <div style={{ padding: '20px' }}>
+                <p style={{ marginBottom: '16px', color: '#666' }}>
+                  If you have any questions, feel free to reach out to our HR team:
+                </p>
+                <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>Email</div>
+                    <div style={{ fontWeight: '600' }}>hr@wissentech.com</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>Phone</div>
+                    <div style={{ fontWeight: '600' }}>+91 80-1234-5678</div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </>
         )}
 
         {/* Preview Modal */}
-        {showPreview && offerData && (
+        {showPreview && (
           <div className="modal-overlay" onClick={() => setShowPreview(false)}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px' }}>
               <div className="modal-header">
@@ -529,6 +456,7 @@ const InternOffer = () => {
               </div>
               
               <div className="modal-body" style={{ maxHeight: '600px', overflow: 'auto' }}>
+                {/* Offer Letter Template */}
                 <div style={{ padding: '40px', background: 'white', fontFamily: 'serif' }}>
                   <div style={{ textAlign: 'center', marginBottom: '32px' }}>
                     <h1 style={{ color: '#1e40af', margin: '0 0 8px 0' }}>Wissen Technology</h1>
@@ -557,7 +485,7 @@ const InternOffer = () => {
                   </p>
 
                   <p style={{ marginBottom: '16px', lineHeight: '1.6' }}>
-                    We are pleased to offer you the position of <strong>{offerData.position}</strong> in the {offerData.department} department at Wissen Technology.
+                    We are pleased to offer you the position of <strong>{offerData.position}</strong> in the {offerData.department} department at Wissen Technology. We were impressed with your skills and believe you will be a valuable addition to our team.
                   </p>
 
                   <div style={{ marginBottom: '24px', padding: '20px', background: '#f9fafb', borderRadius: '8px' }}>
@@ -569,20 +497,46 @@ const InternOffer = () => {
                           <td style={{ padding: '8px 0', borderBottom: '1px solid #e5e7eb' }}>{offerData.position}</td>
                         </tr>
                         <tr>
+                          <td style={{ padding: '8px 0', borderBottom: '1px solid #e5e7eb' }}><strong>Department:</strong></td>
+                          <td style={{ padding: '8px 0', borderBottom: '1px solid #e5e7eb' }}>{offerData.department}</td>
+                        </tr>
+                        <tr>
                           <td style={{ padding: '8px 0', borderBottom: '1px solid #e5e7eb' }}><strong>Monthly Stipend:</strong></td>
                           <td style={{ padding: '8px 0', borderBottom: '1px solid #e5e7eb' }}>₹{offerData.stipend.toLocaleString()}</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '8px 0', borderBottom: '1px solid #e5e7eb' }}><strong>Duration:</strong></td>
+                          <td style={{ padding: '8px 0', borderBottom: '1px solid #e5e7eb' }}>{offerData.duration}</td>
                         </tr>
                         <tr>
                           <td style={{ padding: '8px 0', borderBottom: '1px solid #e5e7eb' }}><strong>Start Date:</strong></td>
                           <td style={{ padding: '8px 0', borderBottom: '1px solid #e5e7eb' }}>{new Date(offerData.startDate).toLocaleDateString('en-IN')}</td>
                         </tr>
                         <tr>
-                          <td style={{ padding: '8px 0' }}><strong>Location:</strong></td>
-                          <td style={{ padding: '8px 0' }}>{offerData.location}</td>
+                          <td style={{ padding: '8px 0', borderBottom: '1px solid #e5e7eb' }}><strong>Location:</strong></td>
+                          <td style={{ padding: '8px 0', borderBottom: '1px solid #e5e7eb' }}>{offerData.location}</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '8px 0', borderBottom: '1px solid #e5e7eb' }}><strong>Work Mode:</strong></td>
+                          <td style={{ padding: '8px 0', borderBottom: '1px solid #e5e7eb' }}>{offerData.workMode}</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '8px 0' }}><strong>Reporting To:</strong></td>
+                          <td style={{ padding: '8px 0' }}>{offerData.reportingManager}</td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
+
+                  <p style={{ marginBottom: '16px', lineHeight: '1.6' }}>
+                    We look forward to having you join our team and contribute to exciting projects. Please confirm your acceptance by clicking the "Accept Offer" button.
+                  </p>
+
+                  <p style={{ marginBottom: '32px', lineHeight: '1.6' }}>
+                    Sincerely,<br />
+                    <strong>HR Department</strong><br />
+                    Wissen Technology
+                  </p>
                 </div>
               </div>
               

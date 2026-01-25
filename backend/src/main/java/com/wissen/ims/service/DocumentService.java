@@ -83,7 +83,12 @@ public class DocumentService {
         document.setSize(formattedSize);
         document.setStatus(Document.DocumentStatus.PENDING);
 
-        return documentRepository.save(document);
+        Document savedDocument = documentRepository.save(document);
+        
+        // Update intern status to DOCUMENT_VERIFICATION if all required docs are uploaded
+        updateInternDocumentStatus(internId);
+        
+        return savedDocument;
     }
 
     // Helper method to format file size
@@ -102,7 +107,12 @@ public class DocumentService {
         document.setStatus(Document.DocumentStatus.VERIFIED);
         document.setVerifiedBy(verifiedBy);
         document.setVerifiedAt(LocalDateTime.now());
-        return documentRepository.save(document);
+        Document savedDocument = documentRepository.save(document);
+        
+        // Update intern status if all documents are verified
+        updateInternDocumentStatus(document.getIntern().getId());
+        
+        return savedDocument;
     }
 
     public Document rejectDocument(Long id, String reason, String verifiedBy) {
@@ -111,7 +121,17 @@ public class DocumentService {
         document.setRejectionReason(reason);
         document.setVerifiedBy(verifiedBy);
         document.setVerifiedAt(LocalDateTime.now());
-        return documentRepository.save(document);
+        Document savedDocument = documentRepository.save(document);
+        
+        // Update intern status back to DOCUMENT_PENDING if any doc is rejected
+        Intern intern = document.getIntern();
+        if (intern.getStatus() == Intern.InternStatus.DOCUMENT_VERIFICATION || 
+            intern.getStatus() == Intern.InternStatus.DOCUMENT_VERIFIED) {
+            intern.setStatus(Intern.InternStatus.DOCUMENT_PENDING);
+            internRepository.save(intern);
+        }
+        
+        return savedDocument;
     }
 
     public void deleteDocument(Long id) {
@@ -132,5 +152,53 @@ public class DocumentService {
         Intern intern = internRepository.findById(internId)
                 .orElseThrow(() -> new RuntimeException("Intern not found"));
         return documentRepository.countByInternAndStatus(intern, status);
+    }
+
+    /**
+     * Update intern status based on document upload/verification status
+     * - DOCUMENT_PENDING: No documents or some rejected
+     * - DOCUMENT_VERIFICATION: All required docs uploaded, waiting for admin verification
+     * - DOCUMENT_VERIFIED: All required docs verified by admin
+     */
+    private void updateInternDocumentStatus(Long internId) {
+        Intern intern = internRepository.findById(internId)
+                .orElseThrow(() -> new RuntimeException("Intern not found"));
+        
+        List<Document> documents = documentRepository.findByInternId(internId);
+        
+        // Required document types
+        List<String> requiredDocs = List.of("AADHAAR", "PAN", "CLASS_10", "CLASS_12", "DEGREE", "PHOTO", "BANK_PASSBOOK");
+        
+        // Check if all required documents are uploaded
+        long uploadedCount = documents.stream()
+                .filter(doc -> requiredDocs.contains(doc.getName()))
+                .count();
+        
+        // Check if any document is rejected
+        boolean hasRejected = documents.stream()
+                .anyMatch(doc -> doc.getStatus() == Document.DocumentStatus.REJECTED);
+        
+        // Check if all required documents are verified
+        long verifiedCount = documents.stream()
+                .filter(doc -> requiredDocs.contains(doc.getName()))
+                .filter(doc -> doc.getStatus() == Document.DocumentStatus.VERIFIED)
+                .count();
+        
+        // Update intern status based on document state
+        if (hasRejected) {
+            // If any document is rejected, go back to DOCUMENT_PENDING
+            intern.setStatus(Intern.InternStatus.DOCUMENT_PENDING);
+        } else if (verifiedCount == requiredDocs.size()) {
+            // All required documents verified
+            intern.setStatus(Intern.InternStatus.DOCUMENT_VERIFIED);
+        } else if (uploadedCount == requiredDocs.size()) {
+            // All required documents uploaded, waiting for verification
+            intern.setStatus(Intern.InternStatus.DOCUMENT_VERIFICATION);
+        } else {
+            // Still uploading documents
+            intern.setStatus(Intern.InternStatus.DOCUMENT_PENDING);
+        }
+        
+        internRepository.save(intern);
     }
 }

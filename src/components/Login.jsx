@@ -45,7 +45,9 @@ const Login = () => {
         email: response.email,
         name: response.name,
         userType: response.userType,
-        collegeName: response.collegeName  // For COLLEGE users
+        collegeId: response.collegeId,      // For COLLEGE users
+        collegeName: response.collegeName,  // For COLLEGE users
+        internId: response.internId         // For INTERN users
       }));
       
       // Small delay to show loading state, then navigate
