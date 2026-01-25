@@ -157,6 +157,84 @@ const InternDocuments = () => {
     setShowUploadModal(true);
   };
 
+  const handleViewDocument = async (docId) => {
+    try {
+      const token = api.getAuthToken();
+      const url = `${api.baseURL}/documents/${docId}/view`;
+      // Open in new tab with auth header by creating a blob URL
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('View failed');
+      
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank');
+    } catch (error) {
+      console.error('Error viewing document:', error);
+      alert('Failed to view document: ' + error.message);
+    }
+  };
+
+  const handleDownloadDocument = async (docId, docName) => {
+    try {
+      const token = api.getAuthToken();
+      const response = await fetch(`${api.baseURL}/documents/${docId}/download`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Download failed with status: ${response.status}`);
+      }
+      
+      const blob = await response.blob();
+      console.log('Blob size:', blob.size, 'type:', blob.type);
+      
+      const contentDisposition = response.headers.get('Content-Disposition');
+      console.log('Content-Disposition header:', contentDisposition);
+      
+      let filename = 'document';
+      
+      // Extract filename from Content-Disposition header if available
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/i);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1];
+          console.log('Extracted filename:', filename);
+        }
+      }
+      
+      // Fallback to docName if no filename in header
+      if (filename === 'document' && docName) {
+        filename = docName + '.pdf'; // Add default extension
+      }
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up after a short delay
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }, 100);
+      
+      console.log('Download initiated for:', filename);
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      alert('Failed to download document: ' + error.message);
+    }
+  };
+
   const handleDelete = async (docId) => {
     const confirmed = window.confirm('Are you sure you want to delete this document?');
     if (confirmed) {
@@ -403,10 +481,16 @@ const InternDocuments = () => {
                         </button>
                       ) : (
                         <>
-                          <button className="btn btn-outline btn-sm">
+                          <button 
+                            className="btn btn-outline btn-sm"
+                            onClick={() => handleViewDocument(doc.id)}
+                          >
                             👁️ View
                           </button>
-                          <button className="btn btn-outline btn-sm">
+                          <button 
+                            className="btn btn-outline btn-sm"
+                            onClick={() => handleDownloadDocument(doc.id, doc.name)}
+                          >
                             📥 Download
                           </button>
                           {doc.status !== 'VERIFIED' && (

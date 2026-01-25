@@ -1,5 +1,6 @@
 package com.wissen.ims.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -25,6 +26,7 @@ public class Offer {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "intern_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Intern intern;
 
     @Column(nullable = false)
@@ -59,6 +61,11 @@ public class Offer {
     private Long generatedBy;
 
     private LocalDateTime sentAt;
+    
+    private LocalDateTime acceptedAt;
+    
+    @Column(name = "signed_offer_path")
+    private String signedOfferPath; // Path to uploaded signed offer letter
 
     @CreatedDate
     @Column(nullable = false, updatable = false)

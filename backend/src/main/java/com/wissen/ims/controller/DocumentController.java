@@ -123,13 +123,83 @@ public class DocumentController {
         try {
             Document document = documentService.getDocumentById(id);
             Path filePath = Paths.get(document.getFilePath());
+            
+            System.out.println("Attempting to download document ID: " + id);
+            System.out.println("File path from database: " + document.getFilePath());
+            System.out.println("File exists: " + filePath.toFile().exists());
+            System.out.println("File readable: " + filePath.toFile().canRead());
+            
             Resource resource = new UrlResource(filePath.toUri());
 
             if (resource.exists() && resource.isReadable()) {
+                // Get file extension from the stored file path
+                String fileName = filePath.getFileName().toString();
+                String extension = "";
+                int dotIndex = fileName.lastIndexOf('.');
+                if (dotIndex > 0) {
+                    extension = fileName.substring(dotIndex);
+                }
+                
+                // Create a friendly filename: DocumentName_Label.ext
+                String downloadFilename = document.getName() + "_" + 
+                    (document.getLabel() != null ? document.getLabel().replace(" ", "_") : "Document") + 
+                    extension;
+
+                System.out.println("Sending file with name: " + downloadFilename);
+                System.out.println("File size: " + resource.contentLength() + " bytes");
+
                 return ResponseEntity.ok()
                         .contentType(MediaType.APPLICATION_OCTET_STREAM)
                         .header(HttpHeaders.CONTENT_DISPOSITION, 
-                                "attachment; filename=\"" + document.getName() + "\"")
+                                "attachment; filename=\"" + downloadFilename + "\"")
+                        .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(resource.contentLength()))
+                        .body(resource);
+            } else {
+                System.err.println("File not found or not readable at: " + filePath);
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            System.err.println("Error downloading document: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/{id}/view")
+    public ResponseEntity<Resource> viewDocument(@PathVariable Long id) {
+        try {
+            Document document = documentService.getDocumentById(id);
+            Path filePath = Paths.get(document.getFilePath());
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (resource.exists() && resource.isReadable()) {
+                // Get file extension to determine content type
+                String fileName = filePath.getFileName().toString();
+                String extension = "";
+                int dotIndex = fileName.lastIndexOf('.');
+                if (dotIndex > 0) {
+                    extension = fileName.substring(dotIndex).toLowerCase();
+                }
+                
+                // Determine content type based on extension
+                MediaType contentType = MediaType.APPLICATION_OCTET_STREAM;
+                if (extension.equals(".pdf")) {
+                    contentType = MediaType.APPLICATION_PDF;
+                } else if (extension.equals(".jpg") || extension.equals(".jpeg")) {
+                    contentType = MediaType.IMAGE_JPEG;
+                } else if (extension.equals(".png")) {
+                    contentType = MediaType.IMAGE_PNG;
+                }
+                
+                // Create a friendly filename for inline display
+                String viewFilename = document.getName() + "_" + 
+                    (document.getLabel() != null ? document.getLabel().replace(" ", "_") : "Document") + 
+                    extension;
+
+                return ResponseEntity.ok()
+                        .contentType(contentType)
+                        .header(HttpHeaders.CONTENT_DISPOSITION, 
+                                "inline; filename=\"" + viewFilename + "\"")
                         .body(resource);
             } else {
                 return ResponseEntity.notFound().build();

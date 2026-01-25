@@ -4,9 +4,14 @@ import com.wissen.ims.dto.ApiResponse;
 import com.wissen.ims.model.Offer;
 import com.wissen.ims.service.OfferService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -103,10 +108,12 @@ public class OfferController {
         }
     }
 
-    @PatchMapping("/{id}/accept")
-    public ResponseEntity<ApiResponse<Offer>> acceptOffer(@PathVariable Long id) {
+    @PostMapping("/{id}/accept")
+    public ResponseEntity<ApiResponse<Offer>> acceptOffer(
+            @PathVariable Long id,
+            @RequestParam(required = false) MultipartFile signedOffer) {
         try {
-            Offer offer = offerService.acceptOffer(id);
+            Offer offer = offerService.acceptOffer(id, signedOffer);
             return ResponseEntity.ok(ApiResponse.success(offer));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -122,6 +129,46 @@ public class OfferController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @GetMapping("/{id}/download")
+    public ResponseEntity<Resource> downloadOfferLetter(@PathVariable Long id) {
+        try {
+            Offer offer = offerService.getOfferById(id);
+            byte[] pdfBytes = offerService.downloadOfferLetter(id);
+            
+            String filename = "Offer_Letter_" + offer.getIntern().getName().replace(" ", "_") + ".pdf";
+            
+            ByteArrayResource resource = new ByteArrayResource(pdfBytes);
+            
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, 
+                            "attachment; filename=\"" + filename + "\"")
+                    .body(resource);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/{id}/view")
+    public ResponseEntity<Resource> viewOfferLetter(@PathVariable Long id) {
+        try {
+            Offer offer = offerService.getOfferById(id);
+            byte[] pdfBytes = offerService.downloadOfferLetter(id);
+            
+            String filename = "Offer_Letter_" + offer.getIntern().getName().replace(" ", "_") + ".pdf";
+            
+            ByteArrayResource resource = new ByteArrayResource(pdfBytes);
+            
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, 
+                            "inline; filename=\"" + filename + "\"")
+                    .body(resource);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

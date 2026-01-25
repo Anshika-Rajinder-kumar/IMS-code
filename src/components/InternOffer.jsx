@@ -12,6 +12,8 @@ const InternOffer = () => {
   const [offerData, setOfferData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [signedOfferFile, setSignedOfferFile] = useState(null);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -59,23 +61,41 @@ const InternOffer = () => {
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!offerData) return;
-    window.open(api.getOfferDownloadUrl(offerData.id), '_blank');
+    try {
+      await api.downloadOffer(offerData.id);
+    } catch (error) {
+      console.error('Error downloading offer:', error);
+      alert('Failed to download offer letter: ' + error.message);
+    }
   };
 
   const handleAccept = async () => {
-    const confirmed = window.confirm('Do you want to accept this offer? This action cannot be undone.');
-    if (confirmed) {
-      try {
-        await api.acceptOffer(offerData.id);
-        await fetchOffer(user.internId);
-        await fetchInternData(user.internId);
-        alert('🎉 Congratulations! You have accepted the offer. HR will contact you soon with next steps.');
-      } catch (error) {
-        console.error('Error accepting offer:', error);
-        alert('Failed to accept offer: ' + error.message);
-      }
+    setShowUploadModal(true);
+  };
+  
+  const handleUploadAndAccept = async () => {
+    if (!signedOfferFile) {
+      alert('Please upload the signed offer letter before accepting.');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      const formData = new FormData();
+      formData.append('signedOffer', signedOfferFile);
+      
+      await api.acceptOfferWithFile(offerData.id, formData);
+      await fetchOffer(user.internId);
+      await fetchInternData(user.internId);
+      setShowUploadModal(false);
+      alert('🎉 Congratulations! You have accepted the offer. HR will contact you soon with next steps.');
+    } catch (error) {
+      console.error('Error accepting offer:', error);
+      alert('Failed to accept offer: ' + error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -595,6 +615,80 @@ const InternOffer = () => {
                   handleAccept();
                 }}>
                   ✅ Accept Offer
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Upload Signed Offer Modal */}
+        {showUploadModal && (
+          <div className="modal-overlay" onClick={() => setShowUploadModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>📤 Upload Signed Offer Letter</h2>
+                <button className="close-btn" onClick={() => setShowUploadModal(false)}>×</button>
+              </div>
+              
+              <div className="modal-body">
+                <div style={{ 
+                  background: '#fef3c7', 
+                  border: '1px solid #fbbf24', 
+                  borderRadius: '8px', 
+                  padding: '16px', 
+                  marginBottom: '20px' 
+                }}>
+                  <p style={{ margin: 0, color: '#92400e' }}>
+                    <strong>⚠️ Important:</strong> Please download the offer letter, sign it, scan/take a clear photo, and upload it below to accept the offer.
+                  </p>
+                </div>
+                
+                <div style={{ marginBottom: '20px' }}>
+                  <button className="btn btn-outline" onClick={handleDownload} style={{ width: '100%' }}>
+                    📥 Download Offer Letter
+                  </button>
+                </div>
+                
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ 
+                    display: 'block', 
+                    marginBottom: '8px', 
+                    fontWeight: '500',
+                    color: '#374151'
+                  }}>
+                    Upload Signed Offer Letter (PDF/Image)
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) => setSignedOfferFile(e.target.files[0])}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '2px dashed #cbd5e1',
+                      borderRadius: '8px',
+                      cursor: 'pointer'
+                    }}
+                  />
+                  {signedOfferFile && (
+                    <p style={{ marginTop: '8px', color: '#059669', fontSize: '14px' }}>
+                      ✅ Selected: {signedOfferFile.name}
+                    </p>
+                  )}
+                </div>
+              </div>
+              
+              <div className="modal-footer">
+                <button className="btn btn-outline" onClick={() => setShowUploadModal(false)}>
+                  Cancel
+                </button>
+                <button 
+                  className="btn btn-success" 
+                  onClick={handleUploadAndAccept}
+                  disabled={!signedOfferFile}
+                  style={{ opacity: signedOfferFile ? 1 : 0.5 }}
+                >
+                  ✅ Upload & Accept Offer
                 </button>
               </div>
             </div>

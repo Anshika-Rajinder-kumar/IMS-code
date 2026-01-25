@@ -112,13 +112,27 @@ const Offers = () => {
     setShowPreview(true);
   };
 
-  const handleDownload = () => {
-    alert('Offer letter downloaded successfully!');
+  const handleDownload = async (offerId) => {
+    try {
+      await api.downloadOffer(offerId);
+    } catch (error) {
+      console.error('Error downloading offer:', error);
+      alert('Failed to download offer letter');
+    }
   };
 
-  const handleSendEmail = () => {
-    alert(`Offer letter sent to ${selectedIntern?.email}`);
-    setShowPreview(false);
+  const handleSendEmail = async (offerId) => {
+    const confirmed = window.confirm('Send offer letter to the intern via email?');
+    if (confirmed) {
+      try {
+        await api.sendOffer(offerId);
+        alert('✅ Offer letter sent successfully!');
+        fetchOffers(); // Refresh the list
+      } catch (error) {
+        console.error('Error sending offer:', error);
+        alert('Failed to send offer letter: ' + error.message);
+      }
+    }
   };
 
   const getStatusBadge = (status) => {
@@ -262,11 +276,17 @@ const Offers = () => {
                             >
                               👁️ Preview
                             </button>
-                            <button className="btn btn-outline btn-sm">
+                            <button 
+                              className="btn btn-outline btn-sm"
+                              onClick={() => handleDownload(offer.id)}
+                            >
                               ⬇️ Download
                             </button>
-                            {offer.status !== 'SENT' && (
-                              <button className="btn btn-primary btn-sm">
+                            {offer.status !== 'SENT' && offer.status !== 'ACCEPTED' && (
+                              <button 
+                                className="btn btn-primary btn-sm"
+                                onClick={() => handleSendEmail(offer.id)}
+                              >
                                 📧 Send
                               </button>
                             )}

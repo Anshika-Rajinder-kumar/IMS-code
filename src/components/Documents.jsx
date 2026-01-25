@@ -8,6 +8,7 @@ const Documents = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
+  const [expandedIntern, setExpandedIntern] = useState(null);
   
   const [internsWithDocs, setInternsWithDocs] = useState([]);
 
@@ -76,6 +77,88 @@ const Documents = () => {
         alert('Failed to reject document');
       }
     }
+  };
+
+  const handleViewDocument = async (docId) => {
+    try {
+      const token = api.getAuthToken();
+      const url = `${api.baseURL}/documents/${docId}/view`;
+      // Open in new tab with auth header by creating a blob URL
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('View failed');
+      
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank');
+    } catch (err) {
+      console.error('Error viewing document:', err);
+      alert('Failed to view document');
+    }
+  };
+
+  const handleDownloadDocument = async (docId, docName) => {
+    try {
+      const token = api.getAuthToken();
+      const response = await fetch(`${api.baseURL}/documents/${docId}/download`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Download failed with status: ${response.status}`);
+      }
+      
+      const blob = await response.blob();
+      console.log('Blob size:', blob.size, 'type:', blob.type);
+      
+      const contentDisposition = response.headers.get('Content-Disposition');
+      console.log('Content-Disposition header:', contentDisposition);
+      
+      let filename = 'document';
+      
+      // Extract filename from Content-Disposition header if available
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/i);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1];
+          console.log('Extracted filename:', filename);
+        }
+      }
+      
+      // Fallback to docName if no filename in header
+      if (filename === 'document' && docName) {
+        filename = docName + '.pdf'; // Add default extension
+      }
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up after a short delay
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }, 100);
+      
+      console.log('Download initiated for:', filename);
+    } catch (err) {
+      console.error('Error downloading document:', err);
+      alert('Failed to download document');
+    }
+  };
+
+  const toggleInternExpand = (internId) => {
+    setExpandedIntern(expandedIntern === internId ? null : internId);
   };
 
   const handleVerifyInternStatus = async (internId) => {
@@ -315,21 +398,28 @@ const Documents = () => {
               
               return (
                 <div key={intern.id} className="card">
-                  {/* Intern Header */}
-                  <div style={{ 
-                    padding: '20px', 
-                    borderBottom: '1px solid #e5e7eb',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '16px',
-                    flexWrap: 'wrap'
-                  }}>
+                  {/* Intern Header - Now Clickable */}
+                  <div 
+                    style={{ 
+                      padding: '20px', 
+                      borderBottom: expandedIntern === intern.id ? '1px solid #e5e7eb' : 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '16px',
+                      flexWrap: 'wrap',
+                      cursor: 'pointer',
+                      transition: 'background 0.2s'
+                    }}
+                    onClick={() => toggleInternExpand(intern.id)}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
                     <div className="intern-avatar" style={{ width: '60px', height: '60px', fontSize: '24px' }}>
                       {intern.name.charAt(0)}
                     </div>
                     <div style={{ flex: 1 }}>
                       <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: '600' }}>
-                        {intern.name}
+                        {intern.name} {expandedIntern === intern.id ? '▼' : '▶'}
                       </h3>
                       <p style={{ margin: 0, color: '#666', fontSize: '14px' }}>
                         {intern.collegeName || 'N/A'} • {intern.email}
@@ -347,11 +437,14 @@ const Documents = () => {
                         </span>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}>
+                    <div 
+                      style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {intern.status === 'DOCUMENT_VERIFICATION' && (
                         <button
                           className="btn btn-success"
-                          onClick={() => handleVerifyInternStatus(intern.id)}
+                          onClick={(e) => { e.stopPropagation(); handleVerifyInternStatus(intern.id); }}
                         >
                           ✅ Verify Status
                         </button>
@@ -359,7 +452,7 @@ const Documents = () => {
                       {intern.documents && intern.documents.length > 0 && (
                         <button
                           className="btn btn-outline"
-                          onClick={() => handleVerifyAllDocuments(intern.id)}
+                          onClick={(e) => { e.stopPropagation(); handleVerifyAllDocuments(intern.id); }}
                           disabled={!intern.documents.some(d => d.status === 'PENDING')}
                         >
                           📄 Verify All Documents
@@ -368,67 +461,85 @@ const Documents = () => {
                     </div>
                   </div>
 
-                  {/* Documents List */}
-                  <div style={{ padding: '20px' }}>
-                    {intern.documents && intern.documents.length > 0 ? (
-                      <div style={{ display: 'grid', gap: '12px' }}>
-                        {intern.documents.map(doc => (
-                          <div 
-                            key={doc.id}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '12px',
-                              padding: '12px',
-                              border: '1px solid #e5e7eb',
-                              borderRadius: '8px',
-                              backgroundColor: '#f9fafb'
-                            }}
-                          >
-                            <div style={{ fontSize: '32px' }}>
-                              {getDocumentIcon(doc.type)}
-                            </div>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontWeight: '500', marginBottom: '4px' }}>
-                                {doc.name}
+                  {/* Documents List - Collapsible */}
+                  {expandedIntern === intern.id && (
+                    <div style={{ padding: '20px' }}>
+                      {intern.documents && intern.documents.length > 0 ? (
+                        <div style={{ display: 'grid', gap: '12px' }}>
+                          {intern.documents.map(doc => (
+                            <div 
+                              key={doc.id}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                padding: '12px',
+                                border: '1px solid #e5e7eb',
+                                borderRadius: '8px',
+                                backgroundColor: '#f9fafb'
+                              }}
+                            >
+                              <div style={{ fontSize: '32px' }}>
+                                {getDocumentIcon(doc.type)}
                               </div>
-                              <div style={{ fontSize: '13px', color: '#666' }}>
-                                {doc.type} • {doc.size} • Uploaded: {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : 'N/A'}
-                              </div>
-                              {doc.rejectionReason && (
-                                <div style={{ fontSize: '13px', color: '#dc2626', marginTop: '4px' }}>
-                                  Reason: {doc.rejectionReason}
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: '500', marginBottom: '4px' }}>
+                                  {doc.label || doc.name}
                                 </div>
-                              )}
-                            </div>
-                            <span className={`badge ${getDocumentStatusBadge(doc.status)}`}>
-                              {doc.status}
-                            </span>
-                            {doc.status === 'PENDING' && (
+                                <div style={{ fontSize: '13px', color: '#666' }}>
+                                  {doc.type} • {doc.size} • Uploaded: {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : 'N/A'}
+                                </div>
+                                {doc.rejectionReason && (
+                                  <div style={{ fontSize: '13px', color: '#dc2626', marginTop: '4px' }}>
+                                    Reason: {doc.rejectionReason}
+                                  </div>
+                                )}
+                              </div>
+                              <span className={`badge ${getDocumentStatusBadge(doc.status)}`}>
+                                {doc.status}
+                              </span>
                               <div style={{ display: 'flex', gap: '8px' }}>
                                 <button
-                                  className="btn btn-success btn-sm"
-                                  onClick={() => handleVerifyDocument(doc.id, intern.id)}
+                                  className="btn btn-outline btn-sm"
+                                  onClick={() => handleViewDocument(doc.id)}
+                                  title="View Document"
                                 >
-                                  ✓ Verify
+                                  👁️ View
                                 </button>
                                 <button
-                                  className="btn btn-danger btn-sm"
-                                  onClick={() => handleRejectDocument(doc.id, intern.id)}
+                                  className="btn btn-outline btn-sm"
+                                  onClick={() => handleDownloadDocument(doc.id, doc.name)}
+                                  title="Download Document"
                                 >
-                                  ✕ Reject
+                                  📥 Download
                                 </button>
+                                {doc.status === 'PENDING' && (
+                                  <>
+                                    <button
+                                      className="btn btn-success btn-sm"
+                                      onClick={() => handleVerifyDocument(doc.id, intern.id)}
+                                    >
+                                      ✓ Verify
+                                    </button>
+                                    <button
+                                      className="btn btn-danger btn-sm"
+                                      onClick={() => handleRejectDocument(doc.id, intern.id)}
+                                    >
+                                      ✕ Reject
+                                    </button>
+                                  </>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>
-                        No documents uploaded yet
-                      </div>
-                    )}
-                  </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>
+                          No documents uploaded yet
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}

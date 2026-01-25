@@ -332,6 +332,79 @@ class ApiService {
   async acceptOffer(id) {
     return this.patch(`/offers/${id}/accept`);
   }
+  
+  async acceptOfferWithFile(id, formData) {
+    const token = this.getAuthToken();
+    const headers = {};
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${this.baseURL}/offers/${id}/accept`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+    return this.handleResponse(response);
+  }
+  
+  getOfferDownloadUrl(id) {
+    return `${this.baseURL}/offers/${id}/download`;
+  }
+  
+  async downloadOffer(id) {
+    try {
+      const token = this.getAuthToken();
+      const response = await fetch(`${this.baseURL}/offers/${id}/download`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        // Try to get error message from JSON response
+        try {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Download failed');
+        } catch (jsonError) {
+          throw new Error(`Download failed with status: ${response.status}`);
+        }
+      }
+      
+      const blob = await response.blob();
+      
+      // Check if we actually got a PDF
+      if (blob.type === 'application/json') {
+        // Backend returned JSON error instead of PDF
+        const text = await blob.text();
+        const errorData = JSON.parse(text);
+        throw new Error(errorData.message || 'Server returned an error instead of PDF');
+      }
+      
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'Offer_Letter.pdf';
+      
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/i);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1];
+        }
+      }
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Download offer error:', error);
+      throw error;
+    }
+  }
 
   async rejectOffer(id) {
     return this.patch(`/offers/${id}/reject`);
