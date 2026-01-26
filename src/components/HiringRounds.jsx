@@ -7,24 +7,36 @@ import './HiringRounds.css';
 const HiringRounds = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRound, setSelectedRound] = useState('all');
-  const [showModal, setShowModal] = useState(false);
-  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const [candidates, setCandidates] = useState([]);
   const [hiringHistory, setHiringHistory] = useState([]);
   const [toast, setToast] = useState(null);
-
-  const [rounds] = useState([
-    { id: 1, name: 'Aptitude Test', order: 1, icon: '📝' },
-    { id: 2, name: 'Technical Round 1', order: 2, icon: '💻' },
-    { id: 3, name: 'Technical Round 2', order: 3, icon: '🔧' },
-    { id: 4, name: 'HR Round', order: 4, icon: '👔' },
-    { id: 5, name: 'Selected', order: 5, icon: '✅' }
-  ]);
-
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [selectedRoundForFeedback, setSelectedRoundForFeedback] = useState(null);
+  const [resumeUrl, setResumeUrl] = useState(null);
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  
+  // Old modal states (keeping for backward compatibility with old modal code)
+  const [showModal, setShowModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [statusUpdate, setStatusUpdate] = useState({
     round: '',
+    status: 'CLEARED',
+    feedback: '',
+    score: ''
+  });
+
+  const [rounds] = useState([
+    { id: 1, name: 'Aptitude Test', order: 1, icon: '📝', color: '#3b82f6' },
+    { id: 2, name: 'Technical Round 1', order: 2, icon: '💻', color: '#8b5cf6' },
+    { id: 3, name: 'Technical Round 2', order: 3, icon: '🔧', color: '#6366f1' },
+    { id: 4, name: 'HR Round', order: 4, icon: '👔', color: '#f59e0b' },
+    { id: 5, name: 'Selected', order: 5, icon: '✅', color: '#10b981' }
+  ]);
+
+  const [feedbackForm, setFeedbackForm] = useState({
     status: 'CLEARED',
     feedback: '',
     score: ''
@@ -89,25 +101,144 @@ const HiringRounds = () => {
 
   const handleRowClick = async (candidate) => {
     setSelectedCandidate(candidate);
-    setShowHistoryModal(true);
-    // Fetch history based on type
-    if (candidate.type === 'INTERN') {
-      await fetchHiringHistory(candidate.id);
-    } else {
-      // Fetch candidate hiring round history
-      try {
-        setLoading(true);
-        const data = await api.getCandidateHiringRoundsByCandidateId(candidate.id);
-        setHiringHistory(data);
-      } catch (error) {
-        console.error('Error fetching candidate history:', error);
-        setHiringHistory([]);
-      } finally {
-        setLoading(false);
+    setLoadingHistory(true);
+    setResumeUrl(null);
+
+    try {
+      // Fetch hiring history based on type
+      let history;
+      if (candidate.type === 'INTERN') {
+        history = await api.getHiringRoundsByInternId(candidate.id);
+      } else {
+        history = await api.getCandidateHiringRoundsByCandidateId(candidate.id);
       }
+      setHiringHistory(history);
+
+      // Load resume URL for preview (API returns URL string, not blob)
+      try {
+        const url = api.getCandidateResumeUrl(candidate.id);
+        setResumeUrl(url);
+      } catch (error) {
+        console.error('Error loading resume:', error);
+        setResumeUrl(null);
+      }
+    } catch (error) {
+      console.error('Error loading hiring history:', error);
+      setHiringHistory([]);
+    } finally {
+      setLoadingHistory(false);
     }
   };
 
+  const handleRoundClick = (round) => {
+    // Check if any previous round was rejected
+    const currentRoundIndex = rounds.findIndex(r => r.name === round.name);
+    const previousRounds = rounds.slice(0, currentRoundIndex);
+    const hasRejectedPrevious = previousRounds.some(r => {
+      const roundData = hiringHistory.find(h => h.roundName === r.name);
+      return roundData?.status === 'REJECTED';
+    });
+
+    if (hasRejectedPrevious) {
+      setToast({ message: 'Cannot update this round. Previous round was rejected.', type: 'warning' });
+      return;
+    }
+
+    // Find existing feedback for this round
+    const existingRound = hiringHistory.find(h => h.roundName === round.name);
+    
+    setSelectedRoundForFeedback(round);
+    setFeedbackForm({
+      status: existingRound?.status || 'PENDING',
+      feedback: existingRound?.feedback || '',
+      score: existingRound?.score || ''
+    });
+    setShowFeedbackModal(true);
+  };
+
+  const handleSubmitFeedback = async (e) => {
+    e.preventDefault();
+    
+    try {
+      setSubmittingFeedback(true);
+      
+      const isCandidate = selectedCandidate.type === 'CANDIDATE';
+      
+      // If marking as "Selected" and it's a candidate, convert to intern
+      if (selectedRoundForFeedback.name === 'Selected' && feedbackForm.status === 'CLEARED' && isCandidate) {
+        const newIntern = await api.convertCandidateToIntern(selectedCandidate.id, null);
+        
+        await api.updateInternHiringStatus(
+          newIntern.id,
+          selectedRoundForFeedback.name,
+          feedbackForm.status,
+          feedbackForm.score ? parseFloat(feedbackForm.score) : null
+        );
+        
+        setToast({ message: 'Candidate converted to intern successfully!', type: 'success' });
+        setShowFeedbackModal(false);
+        setSelectedCandidate(null);
+        await fetchCandidatesAndInterns();
+        return;
+      }
+      
+      // For candidates in earlier rounds
+      if (isCandidate) {
+        await api.createOrUpdateCandidateHiringRound({
+          candidate: { id: selectedCandidate.id },
+          roundName: selectedRoundForFeedback.name,
+          status: feedbackForm.status,
+          feedback: feedbackForm.feedback,
+          score: feedbackForm.score ? parseFloat(feedbackForm.score) : null
+        });
+        
+        // Update candidate status
+        await api.updateCandidate(selectedCandidate.id, {
+          ...selectedCandidate,
+          hiringRound: selectedRoundForFeedback.name,
+          hiringStatus: feedbackForm.status,
+          hiringScore: feedbackForm.score ? parseFloat(feedbackForm.score) : selectedCandidate.hiringScore
+        });
+      } else {
+        // For interns, create or update hiring round
+        await api.createOrUpdateHiringRound({
+          intern: { id: selectedCandidate.id },
+          roundName: selectedRoundForFeedback.name,
+          status: feedbackForm.status,
+          feedback: feedbackForm.feedback,
+          score: feedbackForm.score ? parseFloat(feedbackForm.score) : null
+        });
+      }
+      
+      setToast({ message: 'Feedback saved successfully!', type: 'success' });
+      setShowFeedbackModal(false);
+      
+      // Refresh history
+      if (isCandidate) {
+        const data = await api.getCandidateHiringRoundsByCandidateId(selectedCandidate.id);
+        setHiringHistory(data);
+      } else {
+        await fetchHiringHistory(selectedCandidate.id);
+      }
+      
+    } catch (error) {
+      console.error('Error saving feedback:', error);
+      setToast({ message: 'Failed to save feedback: ' + error.message, type: 'error' });
+    } finally {
+      setSubmittingFeedback(false);
+    }
+  };
+
+  const getRoundStatus = (roundName) => {
+    const round = hiringHistory.find(h => h.roundName === roundName);
+    return round?.status || 'PENDING';
+  };
+
+  const getRoundData = (roundName) => {
+    return hiringHistory.find(h => h.roundName === roundName);
+  };
+
+  // Old modal handler (keeping for backward compatibility)
   const handleSubmitUpdate = async (e) => {
     e.preventDefault();
     
@@ -120,10 +251,8 @@ const HiringRounds = () => {
       if (isCandidate) {
         // If marking as "Selected" with status "CLEARED", convert to intern
         if (statusUpdate.round === 'Selected' && statusUpdate.status === 'CLEARED') {
-          // Convert candidate to intern without join date (will be set during offer generation)
           const newIntern = await api.convertCandidateToIntern(selectedCandidate.id, null);
           
-          // Update the new intern's hiring status to Selected/CLEARED
           await api.updateInternHiringStatus(
             newIntern.id,
             statusUpdate.round,
@@ -131,9 +260,7 @@ const HiringRounds = () => {
             statusUpdate.score ? Number.parseFloat(statusUpdate.score) : null
           );
           
-          setToast({ message: 'Candidate converted to intern successfully! Credentials sent via email.', type: 'success' });
-          
-          // Refresh the list and close modal
+          setToast({ message: 'Candidate converted to intern successfully!', type: 'success' });
           await fetchCandidatesAndInterns();
           setShowModal(false);
           setSelectedCandidate(null);
@@ -141,80 +268,45 @@ const HiringRounds = () => {
           return;
         }
         
-        // For other statuses, just update the candidate
-        // Map hiring status - keep the actual round status (ON_HOLD, CLEARED, etc.)
-        let candidateStatus = 'APPLIED';
-        if (statusUpdate.round.includes('Aptitude')) candidateStatus = 'SCREENING';
-        else if (statusUpdate.round.includes('Technical') || statusUpdate.round.includes('HR')) candidateStatus = 'INTERVIEWING';
-        else if (statusUpdate.status === 'REJECTED') candidateStatus = 'REJECTED';
-        
-        // Create or update candidate hiring round entry
-        const candidateRound = {
-          candidate: { 
-            id: selectedCandidate.id,
-            name: selectedCandidate.name,
-            email: selectedCandidate.email
-          },
+        await api.updateCandidateHiringRound({
+          candidateId: selectedCandidate.id,
           roundName: statusUpdate.round,
           status: statusUpdate.status,
-          score: statusUpdate.score ? Number.parseFloat(statusUpdate.score) : null,
-          feedback: statusUpdate.feedback || '',
-          interviewer: localStorage.getItem('userName') || 'Admin',
-          scheduledAt: new Date().toISOString(),
-          completedAt: statusUpdate.status !== 'PENDING' && statusUpdate.status !== 'ON_HOLD' ? new Date().toISOString() : null
-        };
-
-        try {
-          await api.createOrUpdateCandidateHiringRound(candidateRound);
-        } catch (error) {
-          console.error('Error creating hiring round:', error);
-          // Continue even if history creation fails
-        }
+          feedback: statusUpdate.feedback,
+          score: statusUpdate.score ? Number.parseFloat(statusUpdate.score) : null
+        });
         
         await api.updateCandidate(selectedCandidate.id, {
           ...selectedCandidate,
           hiringRound: statusUpdate.round,
-          hiringStatus: statusUpdate.status, // Use the actual status (ON_HOLD, CLEARED, PENDING, etc.)
-          hiringScore: statusUpdate.score ? Number.parseFloat(statusUpdate.score) : selectedCandidate.hiringScore,
-          status: candidateStatus
+          hiringStatus: statusUpdate.status,
+          hiringScore: statusUpdate.score ? Number.parseFloat(statusUpdate.score) : selectedCandidate.hiringScore
         });
         
-        await fetchCandidatesAndInterns();
-        setShowModal(false);
-        setSelectedCandidate(null);
         setToast({ message: 'Candidate status updated successfully!', type: 'success' });
-        setLoading(false);
-        return;
+      } else {
+        // For interns
+        await api.createOrUpdateHiringRound({
+          intern: { id: selectedCandidate.id },
+          roundName: statusUpdate.round,
+          status: statusUpdate.status,
+          feedback: statusUpdate.feedback,
+          score: statusUpdate.score ? parseFloat(statusUpdate.score) : null
+        });
+
+        await api.updateInternHiringStatus(
+          selectedCandidate.id,
+          statusUpdate.round,
+          statusUpdate.status,
+          statusUpdate.score ? parseFloat(statusUpdate.score) : null
+        );
+        
+        setToast({ message: 'Status updated successfully!', type: 'success' });
       }
 
-      // For interns, create or update hiring round
-      const newRound = {
-        intern: { id: selectedCandidate.id },
-        roundName: statusUpdate.round,
-        status: statusUpdate.status,
-        score: statusUpdate.score ? parseFloat(statusUpdate.score) : null,
-        feedback: statusUpdate.feedback,
-        interviewer: localStorage.getItem('userName') || 'Admin',
-        scheduledAt: new Date().toISOString(),
-        completedAt: statusUpdate.status !== 'PENDING' ? new Date().toISOString() : null
-      };
-
-      await api.createOrUpdateHiringRound(newRound);
-
-      // Update intern's hiring status
-      await api.updateInternHiringStatus(
-        selectedCandidate.id,
-        statusUpdate.round,
-        statusUpdate.status,
-        statusUpdate.score ? parseFloat(statusUpdate.score) : null
-      );
-
-      // Refresh the candidates list
       await fetchCandidatesAndInterns();
-      
       setShowModal(false);
       setSelectedCandidate(null);
-      setToast({ message: 'Status updated successfully!', type: 'success' });
     } catch (error) {
       console.error('Error updating status:', error);
       setToast({ message: 'Failed to update status: ' + error.message, type: 'error' });
@@ -347,7 +439,7 @@ const HiringRounds = () => {
                     key={candidate.id}
                     onClick={() => handleRowClick(candidate)}
                     style={{ cursor: 'pointer' }}
-                    className="hoverable-row"
+                    className={`hoverable-row ${selectedCandidate?.id === candidate.id ? 'candidate-row-selected' : ''}`}
                   >
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -392,12 +484,6 @@ const HiringRounds = () => {
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <button
-                          className="btn btn-sm btn-primary"
-                          onClick={(e) => handleUpdateStatus(candidate, e)}
-                        >
-                          Update Status
-                        </button>
                         {candidate.type === 'CANDIDATE' && candidate.resumeUrl && (
                           <button
                             className="btn btn-sm btn-outline"
@@ -417,6 +503,287 @@ const HiringRounds = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Split Screen Modal: Resume Preview + Interactive Timeline */}
+        {selectedCandidate && (
+          <div className="modal-overlay" onClick={() => {
+            setSelectedCandidate(null);
+            setHiringHistory([]);
+            setResumeUrl(null);
+          }}>
+            <div className="split-screen-modal" onClick={(e) => e.stopPropagation()}>
+              {/* Left Panel: Resume Preview */}
+              <div className="resume-panel">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h3>📄 Resume Preview</h3>
+                  <button 
+                    className="close-panel-button"
+                    onClick={() => {
+                      setSelectedCandidate(null);
+                      setHiringHistory([]);
+                      setResumeUrl(null);
+                    }}
+                    title="Close Panel"
+                  >
+                    ✕
+                  </button>
+              </div>
+              
+              <div className="candidate-summary" style={{ marginBottom: '16px', background: '#f9fafb', padding: '16px', borderRadius: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div className="avatar-large">{selectedCandidate.name.charAt(0)}</div>
+                  <div>
+                    <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: '600' }}>{selectedCandidate.name}</h4>
+                    <p style={{ margin: '0', fontSize: '14px', color: '#6b7280' }}>{selectedCandidate.email}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="resume-preview">
+                {loadingHistory ? (
+                  <div className="resume-preview-placeholder">
+                    <div className="icon">⏳</div>
+                    <p>Loading resume...</p>
+                  </div>
+                ) : resumeUrl ? (
+                  <embed 
+                    src={resumeUrl} 
+                    type="application/pdf" 
+                    width="100%" 
+                    height="100%"
+                    style={{ border: 'none' }}
+                  />
+                ) : (
+                  <div className="resume-preview-placeholder">
+                    <div className="icon">📄</div>
+                    <p>No resume available</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right Panel: Interactive Timeline */}
+            <div className="timeline-panel">
+              <h3>🎯 Recruitment Timeline</h3>
+              
+              {loadingHistory ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#9ca3af' }}>
+                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
+                  <p>Loading timeline...</p>
+                </div>
+              ) : (
+                <div className="interactive-timeline">
+                  {rounds.map((round, index) => {
+                    const status = getRoundStatus(round.name);
+                    const roundData = getRoundData(round.name);
+                    const statusClass = status.toLowerCase().replace(/_/g, '_');
+                    
+                    // Check if any previous round was rejected
+                    const previousRounds = rounds.slice(0, index);
+                    const isDisabled = previousRounds.some(r => {
+                      const rData = hiringHistory.find(h => h.roundName === r.name);
+                      return rData?.status === 'REJECTED';
+                    });
+
+                    return (
+                      <div key={round.id} className="timeline-round-item">
+                        {/* Connector Line */}
+                        {index < rounds.length - 1 && <div className="timeline-connector"></div>}
+                        
+                        {/* Round Circle */}
+                        <div 
+                          className={`round-circle ${statusClass} ${isDisabled ? 'disabled' : ''}`}
+                          onClick={() => !isDisabled && handleRoundClick(round)}
+                          title={isDisabled ? 'Disabled due to previous rejection' : `Click to add/edit feedback for ${round.name}`}
+                          style={{ 
+                            backgroundColor: status === 'PENDING' ? round.color + '20' : undefined,
+                            opacity: isDisabled ? 0.5 : 1,
+                            cursor: isDisabled ? 'not-allowed' : 'pointer'
+                          }}
+                        >
+                          {status === 'CLEARED' ? '✅' : 
+                           status === 'REJECTED' ? '❌' : 
+                           status === 'ON_HOLD' ? '⏸️' : 
+                           round.icon}
+                        </div>
+
+                        {/* Round Info */}
+                        <div className="round-info">
+                          <div className="round-name">
+                            {round.name}
+                            <span className={`round-status-badge ${statusClass}`}>
+                              {status}
+                            </span>
+                          </div>
+
+                          {roundData && (
+                            <>
+                              <div className="round-details">
+                                {roundData.completedAt && (
+                                  <div className="round-detail-item">
+                                    <span>📅</span>
+                                    <span>{new Date(roundData.completedAt).toLocaleDateString('en-IN', { 
+                                      day: 'numeric', 
+                                      month: 'short', 
+                                      year: 'numeric' 
+                                    })}</span>
+                                  </div>
+                                )}
+                                {roundData.score && (
+                                  <div className="round-detail-item">
+                                    <span>📊</span>
+                                    <span><strong>{roundData.score}%</strong></span>
+                                  </div>
+                                )}
+                                {roundData.interviewer && (
+                                  <div className="round-detail-item">
+                                    <span>👤</span>
+                                    <span>{roundData.interviewer}</span>
+                                  </div>
+                                )}
+                              </div>
+
+                              {roundData.feedback && (
+                                <div className="round-feedback">
+                                  <strong>💬 Feedback:</strong>
+                                  {roundData.feedback}
+                                </div>
+                              )}
+                            </>
+                          )}
+
+                          {!roundData && status === 'PENDING' && (
+                            <p style={{ fontSize: '14px', color: '#9ca3af', margin: '8px 0 0 0' }}>
+                              Click the circle to add feedback
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+          </div>
+        )}
+
+        {/* Feedback Modal */}
+        {showFeedbackModal && selectedRoundForFeedback && (
+          <div className="feedback-modal-overlay" onClick={() => setShowFeedbackModal(false)}>
+            <div className="feedback-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="feedback-modal-header">
+                <h3>💬 Feedback for {selectedRoundForFeedback.name}</h3>
+                <button className="close-button" onClick={() => setShowFeedbackModal(false)}>✕</button>
+              </div>
+
+              <form onSubmit={handleSubmitFeedback}>
+                <div className="feedback-form-group">
+                  <label>Status *</label>
+                  <div className="status-radio-group">
+                    <div className="status-radio-option">
+                      <input
+                        type="radio"
+                        id="status-cleared"
+                        name="status"
+                        value="CLEARED"
+                        checked={feedbackForm.status === 'CLEARED'}
+                        onChange={(e) => setFeedbackForm({...feedbackForm, status: e.target.value})}
+                      />
+                      <label htmlFor="status-cleared" className="status-radio-label">
+                        ✅ Cleared
+                      </label>
+                    </div>
+
+                    <div className="status-radio-option">
+                      <input
+                        type="radio"
+                        id="status-pending"
+                        name="status"
+                        value="PENDING"
+                        checked={feedbackForm.status === 'PENDING'}
+                        onChange={(e) => setFeedbackForm({...feedbackForm, status: e.target.value})}
+                      />
+                      <label htmlFor="status-pending" className="status-radio-label">
+                        ⏳ Pending
+                      </label>
+                    </div>
+
+                    <div className="status-radio-option">
+                      <input
+                        type="radio"
+                        id="status-on-hold"
+                        name="status"
+                        value="ON_HOLD"
+                        checked={feedbackForm.status === 'ON_HOLD'}
+                        onChange={(e) => setFeedbackForm({...feedbackForm, status: e.target.value})}
+                      />
+                      <label htmlFor="status-on-hold" className="status-radio-label">
+                        ⏸️ On Hold
+                      </label>
+                    </div>
+
+                    <div className="status-radio-option">
+                      <input
+                        type="radio"
+                        id="status-rejected"
+                        name="status"
+                        value="REJECTED"
+                        checked={feedbackForm.status === 'REJECTED'}
+                        onChange={(e) => setFeedbackForm({...feedbackForm, status: e.target.value})}
+                      />
+                      <label htmlFor="status-rejected" className="status-radio-label">
+                        ❌ Rejected
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="feedback-form-group">
+                  <label>Score (0-100)</label>
+                  <input
+                    type="number"
+                    className="feedback-input"
+                    placeholder="Enter score (optional)"
+                    min="0"
+                    max="100"
+                    value={feedbackForm.score}
+                    onChange={(e) => setFeedbackForm({...feedbackForm, score: e.target.value})}
+                  />
+                </div>
+
+                <div className="feedback-form-group">
+                  <label>Feedback</label>
+                  <textarea
+                    className="feedback-textarea"
+                    placeholder="Enter your feedback or comments..."
+                    value={feedbackForm.feedback}
+                    onChange={(e) => setFeedbackForm({...feedbackForm, feedback: e.target.value})}
+                  />
+                </div>
+
+                <div className="feedback-modal-actions">
+                  <button 
+                    type="button" 
+                    className="btn btn-outline" 
+                    onClick={() => setShowFeedbackModal(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary"
+                    disabled={submittingFeedback}
+                  >
+                    {submittingFeedback ? 'Saving...' : 'Save Feedback'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* OLD MODALS BELOW - KEEPING FOR NOW FOR BACKWARD COMPATIBILITY */}
 
         {/* Update Status Modal */}
         {showModal && (
