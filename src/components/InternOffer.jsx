@@ -89,6 +89,16 @@ const InternOffer = () => {
       formData.append('signedOffer', signedOfferFile);
       
       await api.acceptOfferWithFile(offerData.id, formData);
+      
+      // Complete Camunda offer acceptance workflow
+      try {
+        await api.acceptOffer(user.candidateId || user.internId);
+        console.log('Camunda offer acceptance workflow completed');
+      } catch (workflowErr) {
+        console.error('Failed to complete offer workflow:', workflowErr);
+        // Don't fail the acceptance if workflow fails
+      }
+      
       await fetchOffer(user.internId);
       await fetchInternData(user.internId);
       setShowUploadModal(false);
@@ -104,8 +114,18 @@ const InternOffer = () => {
   const handleDecline = async () => {
     const confirmed = window.confirm('Are you sure you want to decline this offer?');
     if (confirmed) {
+      const reason = prompt('Please provide a reason for declining (optional):');
       try {
         await api.rejectOffer(offerData.id);
+        
+        // Complete Camunda offer decline workflow
+        try {
+          await api.declineOffer(user.candidateId || user.internId, reason || 'No reason provided');
+          console.log('Camunda offer decline workflow completed');
+        } catch (workflowErr) {
+          console.error('Failed to complete decline workflow:', workflowErr);
+        }
+        
         await fetchOffer(user.internId);
         setToast({ message: 'Offer declined. Thank you for your time.', type: 'info' });
       } catch (error) {

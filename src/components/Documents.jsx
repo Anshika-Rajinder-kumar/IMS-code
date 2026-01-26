@@ -58,7 +58,32 @@ const Documents = () => {
 
   const handleVerifyDocument = async (docId, internId) => {
     try {
+      // Try to get the Camunda task for this document
+      let camundaTaskId = null;
+      try {
+        const task = await api.getDocumentTask(docId);
+        if (task && task.taskId) {
+          camundaTaskId = task.taskId;
+          console.log('Found Camunda task for document:', camundaTaskId);
+        }
+      } catch (err) {
+        console.log('No Camunda task found, using traditional flow');
+      }
+      
+      // Verify document via regular API
       await api.put(`/documents/${docId}/verify`);
+      
+      // Complete Camunda workflow task if exists
+      if (camundaTaskId) {
+        try {
+          await api.reviewDocument(camundaTaskId, 'VERIFIED', 'Document approved by HR');
+          console.log('Camunda document workflow completed');
+        } catch (workflowErr) {
+          console.error('Failed to complete Camunda task:', workflowErr);
+          // Don't fail if workflow fails
+        }
+      }
+      
       setToast({ message: 'Document verified successfully!', type: 'success' });
       await fetchInternsWithDocuments();
     } catch (err) {
@@ -71,7 +96,31 @@ const Documents = () => {
     const reason = prompt('Enter rejection reason:');
     if (reason) {
       try {
+        // Try to get the Camunda task for this document
+        let camundaTaskId = null;
+        try {
+          const task = await api.getDocumentTask(docId);
+          if (task && task.taskId) {
+            camundaTaskId = task.taskId;
+            console.log('Found Camunda task for document:', camundaTaskId);
+          }
+        } catch (err) {
+          console.log('No Camunda task found, using traditional flow');
+        }
+        
+        // Reject document via regular API
         await api.put(`/documents/${docId}/reject`, { reason });
+        
+        // Complete Camunda workflow task if exists
+        if (camundaTaskId) {
+          try {
+            await api.reviewDocument(camundaTaskId, 'REJECTED', reason);
+            console.log('Camunda document workflow completed');
+          } catch (workflowErr) {
+            console.error('Failed to complete Camunda task:', workflowErr);
+          }
+        }
+        
         setToast({ message: 'Document rejected', type: 'info' });
         await fetchInternsWithDocuments();
       } catch (err) {

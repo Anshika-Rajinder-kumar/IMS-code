@@ -95,6 +95,20 @@ const StudentUpload = () => {
         await api.uploadCandidateResume(createdCandidate.id, formData.resumeFile);
       }
       
+      // Start Camunda hiring workflow
+      try {
+        setUploadProgress(85);
+        await api.startHiringProcess(
+          createdCandidate.id,
+          createdCandidate.name,
+          createdCandidate.email
+        );
+        console.log('Hiring workflow started for candidate:', createdCandidate.id);
+      } catch (workflowErr) {
+        console.error('Failed to start hiring workflow:', workflowErr);
+        // Don't fail the entire operation if workflow fails
+      }
+      
       setUploadProgress(100);
       await fetchStudents();
       setShowModal(false);

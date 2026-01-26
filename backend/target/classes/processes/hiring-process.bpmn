@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  id="Definitions_1"
+                  targetNamespace="http://bpmn.io/schema/bpmn">
+  
+  <bpmn:process id="hiring-process" name="Candidate Hiring Process" isExecutable="true" camunda:historyTimeToLive="180">
+    
+    <!-- Start Event -->
+    <bpmn:startEvent id="StartEvent_CandidateApplied" name="Candidate Applied">
+      <bpmn:outgoing>Flow_ToResumeScreening</bpmn:outgoing>
+    </bpmn:startEvent>
+    
+    <!-- Resume Screening Round -->
+    <bpmn:userTask id="Task_ResumeScreening" name="Resume Screening" 
+                   camunda:candidateGroups="HR,ADMIN">
+      <bpmn:incoming>Flow_ToResumeScreening</bpmn:incoming>
+      <bpmn:outgoing>Flow_FromResumeScreening</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- Decision Gateway after Resume Screening -->
+    <bpmn:exclusiveGateway id="Gateway_ResumeDecision" name="Resume Cleared?">
+      <bpmn:incoming>Flow_FromResumeScreening</bpmn:incoming>
+      <bpmn:outgoing>Flow_ResumeCleared</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ResumeRejected</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Technical Round -->
+    <bpmn:userTask id="Task_TechnicalRound" name="Technical Round" 
+                   camunda:candidateGroups="HR,ADMIN">
+      <bpmn:incoming>Flow_ResumeCleared</bpmn:incoming>
+      <bpmn:outgoing>Flow_FromTechnicalRound</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- Decision Gateway after Technical Round -->
+    <bpmn:exclusiveGateway id="Gateway_TechnicalDecision" name="Technical Cleared?">
+      <bpmn:incoming>Flow_FromTechnicalRound</bpmn:incoming>
+      <bpmn:outgoing>Flow_TechnicalCleared</bpmn:outgoing>
+      <bpmn:outgoing>Flow_TechnicalRejected</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- HR Round -->
+    <bpmn:userTask id="Task_HRRound" name="HR Round" 
+                   camunda:candidateGroups="HR,ADMIN">
+      <bpmn:incoming>Flow_TechnicalCleared</bpmn:incoming>
+      <bpmn:outgoing>Flow_FromHRRound</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- Decision Gateway after HR Round -->
+    <bpmn:exclusiveGateway id="Gateway_HRDecision" name="HR Cleared?">
+      <bpmn:incoming>Flow_FromHRRound</bpmn:incoming>
+      <bpmn:outgoing>Flow_HRCleared</bpmn:outgoing>
+      <bpmn:outgoing>Flow_HRRejected</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Panel Interview -->
+    <bpmn:userTask id="Task_PanelInterview" name="Panel Interview" 
+                   camunda:candidateGroups="HR,ADMIN">
+      <bpmn:incoming>Flow_HRCleared</bpmn:incoming>
+      <bpmn:outgoing>Flow_FromPanelInterview</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- Decision Gateway after Panel Interview -->
+    <bpmn:exclusiveGateway id="Gateway_PanelDecision" name="Panel Cleared?">
+      <bpmn:incoming>Flow_FromPanelInterview</bpmn:incoming>
+      <bpmn:outgoing>Flow_PanelCleared</bpmn:outgoing>
+      <bpmn:outgoing>Flow_PanelRejected</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Generate Offer Letter (Automated Task) -->
+    <bpmn:serviceTask id="Task_GenerateOffer" name="Generate Offer Letter"
+                      camunda:delegateExpression="${offerGenerationDelegate}">
+      <bpmn:incoming>Flow_PanelCleared</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToNotifyCandidate</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Notify Candidate (Automated Task) -->
+    <bpmn:serviceTask id="Task_NotifyCandidate" name="Send Offer Notification"
+                      camunda:delegateExpression="${notificationDelegate}">
+      <bpmn:incoming>Flow_ToNotifyCandidate</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToOfferDecision</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Wait for Candidate Decision -->
+    <bpmn:userTask id="Task_CandidateDecision" name="Candidate Reviews Offer"
+                   camunda:assignee="${candidateEmail}">
+      <bpmn:incoming>Flow_ToOfferDecision</bpmn:incoming>
+      <bpmn:outgoing>Flow_FromOfferDecision</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- Decision Gateway for Offer Acceptance -->
+    <bpmn:exclusiveGateway id="Gateway_OfferDecision" name="Offer Accepted?">
+      <bpmn:incoming>Flow_FromOfferDecision</bpmn:incoming>
+      <bpmn:outgoing>Flow_OfferAccepted</bpmn:outgoing>
+      <bpmn:outgoing>Flow_OfferDeclined</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Start Onboarding Process -->
+    <bpmn:serviceTask id="Task_StartOnboarding" name="Initiate Onboarding"
+                      camunda:delegateExpression="${onboardingDelegate}">
+      <bpmn:incoming>Flow_OfferAccepted</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToSuccessEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Successful End Event -->
+    <bpmn:endEvent id="EndEvent_Success" name="Candidate Hired">
+      <bpmn:incoming>Flow_ToSuccessEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <!-- Rejection End Events -->
+    <bpmn:endEvent id="EndEvent_ResumeRejected" name="Resume Rejected">
+      <bpmn:incoming>Flow_ResumeRejected</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <bpmn:endEvent id="EndEvent_TechnicalRejected" name="Technical Rejected">
+      <bpmn:incoming>Flow_TechnicalRejected</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <bpmn:endEvent id="EndEvent_HRRejected" name="HR Rejected">
+      <bpmn:incoming>Flow_HRRejected</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <bpmn:endEvent id="EndEvent_PanelRejected" name="Panel Rejected">
+      <bpmn:incoming>Flow_PanelRejected</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <bpmn:endEvent id="EndEvent_OfferDeclined" name="Offer Declined">
+      <bpmn:incoming>Flow_OfferDeclined</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="Flow_ToResumeScreening" sourceRef="StartEvent_CandidateApplied" targetRef="Task_ResumeScreening"/>
+    <bpmn:sequenceFlow id="Flow_FromResumeScreening" sourceRef="Task_ResumeScreening" targetRef="Gateway_ResumeDecision"/>
+    <bpmn:sequenceFlow id="Flow_ResumeCleared" name="Cleared" sourceRef="Gateway_ResumeDecision" targetRef="Task_TechnicalRound">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${status == 'CLEARED'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ResumeRejected" name="Rejected" sourceRef="Gateway_ResumeDecision" targetRef="EndEvent_ResumeRejected">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${status == 'REJECTED'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    
+    <bpmn:sequenceFlow id="Flow_FromTechnicalRound" sourceRef="Task_TechnicalRound" targetRef="Gateway_TechnicalDecision"/>
+    <bpmn:sequenceFlow id="Flow_TechnicalCleared" name="Cleared" sourceRef="Gateway_TechnicalDecision" targetRef="Task_HRRound">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${status == 'CLEARED'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_TechnicalRejected" name="Rejected" sourceRef="Gateway_TechnicalDecision" targetRef="EndEvent_TechnicalRejected">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${status == 'REJECTED'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    
+    <bpmn:sequenceFlow id="Flow_FromHRRound" sourceRef="Task_HRRound" targetRef="Gateway_HRDecision"/>
+    <bpmn:sequenceFlow id="Flow_HRCleared" name="Cleared" sourceRef="Gateway_HRDecision" targetRef="Task_PanelInterview">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${status == 'CLEARED'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_HRRejected" name="Rejected" sourceRef="Gateway_HRDecision" targetRef="EndEvent_HRRejected">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${status == 'REJECTED'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    
+    <bpmn:sequenceFlow id="Flow_FromPanelInterview" sourceRef="Task_PanelInterview" targetRef="Gateway_PanelDecision"/>
+    <bpmn:sequenceFlow id="Flow_PanelCleared" name="Cleared" sourceRef="Gateway_PanelDecision" targetRef="Task_GenerateOffer">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${status == 'CLEARED'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_PanelRejected" name="Rejected" sourceRef="Gateway_PanelDecision" targetRef="EndEvent_PanelRejected">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${status == 'REJECTED'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    
+    <bpmn:sequenceFlow id="Flow_ToNotifyCandidate" sourceRef="Task_GenerateOffer" targetRef="Task_NotifyCandidate"/>
+    <bpmn:sequenceFlow id="Flow_ToOfferDecision" sourceRef="Task_NotifyCandidate" targetRef="Task_CandidateDecision"/>
+    <bpmn:sequenceFlow id="Flow_FromOfferDecision" sourceRef="Task_CandidateDecision" targetRef="Gateway_OfferDecision"/>
+    <bpmn:sequenceFlow id="Flow_OfferAccepted" name="Accepted" sourceRef="Gateway_OfferDecision" targetRef="Task_StartOnboarding">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${offerStatus == 'ACCEPTED'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_OfferDeclined" name="Declined" sourceRef="Gateway_OfferDecision" targetRef="EndEvent_OfferDeclined">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${offerStatus == 'DECLINED'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    
+    <bpmn:sequenceFlow id="Flow_ToSuccessEnd" sourceRef="Task_StartOnboarding" targetRef="EndEvent_Success"/>
+    
+  </bpmn:process>
+  
+</bpmn:definitions>

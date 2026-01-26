@@ -13,4 +13,5 @@ public interface OfferRepository extends JpaRepository<Offer, Long> {
     List<Offer> findByStatus(Offer.OfferStatus status);
     Optional<Offer> findByIntern(Intern intern);
     List<Offer> findByInternId(Long internId);
+    boolean existsByInternId(Long internId);
 }

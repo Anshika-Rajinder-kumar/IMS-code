@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  id="Definitions_Document"
+                  targetNamespace="http://bpmn.io/schema/bpmn">
+  
+  <bpmn:process id="document-verification-process" name="Document Verification Process" isExecutable="true" camunda:historyTimeToLive="180">
+    
+    <!-- Start Event -->
+    <bpmn:startEvent id="StartEvent_DocumentUploaded" name="Document Uploaded">
+      <bpmn:outgoing>Flow_ToAutoValidation</bpmn:outgoing>
+    </bpmn:startEvent>
+    
+    <!-- Auto Validation (Check format, size, etc) -->
+    <bpmn:serviceTask id="Task_AutoValidation" name="Auto Validate Document"
+                      camunda:delegateExpression="${documentValidationDelegate}">
+      <bpmn:incoming>Flow_ToAutoValidation</bpmn:incoming>
+      <bpmn:outgoing>Flow_FromAutoValidation</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Validation Decision Gateway -->
+    <bpmn:exclusiveGateway id="Gateway_ValidationResult" name="Valid Format?">
+      <bpmn:incoming>Flow_FromAutoValidation</bpmn:incoming>
+      <bpmn:outgoing>Flow_ValidationPassed</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ValidationFailed</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- HR Manual Review -->
+    <bpmn:userTask id="Task_HRReview" name="HR Reviews Document"
+                   camunda:candidateGroups="HR,ADMIN">
+      <bpmn:incoming>Flow_ValidationPassed</bpmn:incoming>
+      <bpmn:outgoing>Flow_FromHRReview</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- HR Decision Gateway -->
+    <bpmn:exclusiveGateway id="Gateway_HRDecision" name="Document Verified?">
+      <bpmn:incoming>Flow_FromHRReview</bpmn:incoming>
+      <bpmn:outgoing>Flow_DocumentVerified</bpmn:outgoing>
+      <bpmn:outgoing>Flow_DocumentRejected</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Update Status to Verified -->
+    <bpmn:serviceTask id="Task_UpdateVerified" name="Mark as Verified"
+                      camunda:delegateExpression="${documentStatusDelegate}">
+      <bpmn:incoming>Flow_DocumentVerified</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToNotifyVerified</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Notify Intern - Verified -->
+    <bpmn:serviceTask id="Task_NotifyVerified" name="Notify Intern (Verified)"
+                      camunda:delegateExpression="${notificationDelegate}">
+      <bpmn:incoming>Flow_ToNotifyVerified</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToCheckAllDocs</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Check if all documents are verified -->
+    <bpmn:serviceTask id="Task_CheckAllDocuments" name="Check All Documents Status"
+                      camunda:delegateExpression="${allDocumentsCheckDelegate}">
+      <bpmn:incoming>Flow_ToCheckAllDocs</bpmn:incoming>
+      <bpmn:outgoing>Flow_FromCheckAllDocs</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- All Documents Verified Decision -->
+    <bpmn:exclusiveGateway id="Gateway_AllDocsVerified" name="All Docs Verified?">
+      <bpmn:incoming>Flow_FromCheckAllDocs</bpmn:incoming>
+      <bpmn:outgoing>Flow_AllDocsComplete</bpmn:outgoing>
+      <bpmn:outgoing>Flow_MoreDocsNeeded</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Trigger Offer Generation -->
+    <bpmn:serviceTask id="Task_TriggerOfferGeneration" name="Trigger Offer Letter Generation"
+                      camunda:delegateExpression="${offerTriggerDelegate}">
+      <bpmn:incoming>Flow_AllDocsComplete</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToSuccessEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Update Status to Rejected -->
+    <bpmn:serviceTask id="Task_UpdateRejected" name="Mark as Rejected"
+                      camunda:delegateExpression="${documentStatusDelegate}">
+      <bpmn:incoming>Flow_DocumentRejected</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToNotifyRejected</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Notify Intern - Rejected -->
+    <bpmn:serviceTask id="Task_NotifyRejected" name="Notify Intern (Rejected)"
+                      camunda:delegateExpression="${notificationDelegate}">
+      <bpmn:incoming>Flow_ToNotifyRejected</bpmn:incoming>
+      <bpmn:incoming>Flow_ValidationFailed</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToReuploadEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- End Events -->
+    <bpmn:endEvent id="EndEvent_Success" name="Document Verified">
+      <bpmn:incoming>Flow_ToSuccessEnd</bpmn:incoming>
+      <bpmn:incoming>Flow_MoreDocsNeeded</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <bpmn:endEvent id="EndEvent_Reupload" name="Awaiting Re-upload">
+      <bpmn:incoming>Flow_ToReuploadEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="Flow_ToAutoValidation" sourceRef="StartEvent_DocumentUploaded" targetRef="Task_AutoValidation"/>
+    <bpmn:sequenceFlow id="Flow_FromAutoValidation" sourceRef="Task_AutoValidation" targetRef="Gateway_ValidationResult"/>
+    <bpmn:sequenceFlow id="Flow_ValidationPassed" name="Valid" sourceRef="Gateway_ValidationResult" targetRef="Task_HRReview">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${validationResult == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ValidationFailed" name="Invalid" sourceRef="Gateway_ValidationResult" targetRef="Task_NotifyRejected">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${validationResult == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    
+    <bpmn:sequenceFlow id="Flow_FromHRReview" sourceRef="Task_HRReview" targetRef="Gateway_HRDecision"/>
+    <bpmn:sequenceFlow id="Flow_DocumentVerified" name="Verified" sourceRef="Gateway_HRDecision" targetRef="Task_UpdateVerified">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${docStatus == 'VERIFIED'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_DocumentRejected" name="Rejected" sourceRef="Gateway_HRDecision" targetRef="Task_UpdateRejected">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${docStatus == 'REJECTED'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    
+    <bpmn:sequenceFlow id="Flow_ToNotifyVerified" sourceRef="Task_UpdateVerified" targetRef="Task_NotifyVerified"/>
+    <bpmn:sequenceFlow id="Flow_ToCheckAllDocs" sourceRef="Task_NotifyVerified" targetRef="Task_CheckAllDocuments"/>
+    <bpmn:sequenceFlow id="Flow_FromCheckAllDocs" sourceRef="Task_CheckAllDocuments" targetRef="Gateway_AllDocsVerified"/>
+    <bpmn:sequenceFlow id="Flow_AllDocsComplete" name="All Complete" sourceRef="Gateway_AllDocsVerified" targetRef="Task_TriggerOfferGeneration">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${allDocsVerified == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_MoreDocsNeeded" name="More Needed" sourceRef="Gateway_AllDocsVerified" targetRef="EndEvent_Success">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${allDocsVerified == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    
+    <bpmn:sequenceFlow id="Flow_ToNotifyRejected" sourceRef="Task_UpdateRejected" targetRef="Task_NotifyRejected"/>
+    <bpmn:sequenceFlow id="Flow_ToReuploadEnd" sourceRef="Task_NotifyRejected" targetRef="EndEvent_Reupload"/>
+    <bpmn:sequenceFlow id="Flow_ToSuccessEnd" sourceRef="Task_TriggerOfferGeneration" targetRef="EndEvent_Success"/>
+    
+  </bpmn:process>
+  
+</bpmn:definitions>

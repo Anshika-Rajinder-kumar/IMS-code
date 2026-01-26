@@ -491,6 +491,58 @@ class ApiService {
   async deleteProject(id) {
     return this.delete(`/admin/project-pool/${id}`);
   }
+
+  // ========== Camunda Workflow APIs ==========
+  
+  // Hiring Workflow
+  async startHiringProcess(candidateId, candidateName, candidateEmail) {
+    return this.post('/workflow/hiring/start', { candidateId, candidateName, candidateEmail });
+  }
+
+  async completeHiringRound(taskId, status, feedback, score) {
+    return this.post('/workflow/hiring/complete-round', { taskId, status, feedback, score });
+  }
+
+  async getPendingHiringTasks() {
+    return this.get('/workflow/hiring/pending-tasks');
+  }
+
+  async getCurrentTaskForCandidate(candidateId) {
+    return this.get(`/workflow/hiring/candidate/${candidateId}/current-task`);
+  }
+
+  async getProcessStatusForCandidate(candidateId) {
+    return this.get(`/workflow/hiring/candidate/${candidateId}/status`);
+  }
+
+  async acceptOffer(candidateId) {
+    return this.post('/workflow/hiring/offer/accept', { candidateId });
+  }
+
+  async declineOffer(candidateId, reason) {
+    return this.post('/workflow/hiring/offer/decline', { candidateId, reason });
+  }
+
+  // Document Workflow
+  async startDocumentVerification(documentId, internId) {
+    return this.post('/workflow/documents/start', { documentId, internId });
+  }
+
+  async reviewDocument(taskId, status, remarks) {
+    return this.post('/workflow/documents/review', { taskId, status, remarks });
+  }
+
+  async getPendingDocumentReviews() {
+    return this.get('/workflow/documents/pending-reviews');
+  }
+
+  async getDocumentTask(documentId) {
+    return this.get(`/workflow/documents/document/${documentId}/task`);
+  }
+
+  async getDocumentProcessStatus(documentId) {
+    return this.get(`/workflow/documents/document/${documentId}/status`);
+  }
 }
 
 export default new ApiService();

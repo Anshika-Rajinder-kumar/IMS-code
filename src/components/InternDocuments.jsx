@@ -121,7 +121,7 @@ const InternDocuments = () => {
 
     try {
       setLoading(true);
-      await api.uploadDocument(
+      const uploadedDoc = await api.uploadDocument(
         user.internId,
         selectedDoc.name,
         selectedDoc.label,
@@ -130,6 +130,17 @@ const InternDocuments = () => {
         selectedDoc.type,
         uploadFile
       );
+
+      // Start Camunda document verification workflow
+      if (uploadedDoc && uploadedDoc.id) {
+        try {
+          await api.startDocumentVerification(uploadedDoc.id, user.internId);
+          console.log('Document verification workflow started for doc:', uploadedDoc.id);
+        } catch (workflowErr) {
+          console.error('Failed to start document workflow:', workflowErr);
+          // Don't fail the upload if workflow fails
+        }
+      }
 
       // Refresh documents
       await fetchDocuments(user.internId);

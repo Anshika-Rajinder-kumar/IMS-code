@@ -195,6 +195,18 @@ const HiringRounds = () => {
         return;
       }
       
+      // Try to get current Camunda task for this candidate
+      let camundaTaskId = null;
+      try {
+        const task = await api.getCurrentTaskForCandidate(selectedCandidate.id);
+        if (task && task.taskId) {
+          camundaTaskId = task.taskId;
+          console.log('Found Camunda task:', camundaTaskId);
+        }
+      } catch (err) {
+        console.log('No Camunda task found, using traditional flow');
+      }
+      
       // For candidates in earlier rounds
       if (isCandidate) {
         await api.createOrUpdateCandidateHiringRound({
@@ -212,6 +224,22 @@ const HiringRounds = () => {
           hiringStatus: feedbackForm.status,
           hiringScore: feedbackForm.score ? parseFloat(feedbackForm.score) : selectedCandidate.hiringScore
         });
+        
+        // Complete Camunda task if exists
+        if (camundaTaskId) {
+          try {
+            await api.completeHiringRound(
+              camundaTaskId,
+              feedbackForm.status,
+              feedbackForm.feedback,
+              feedbackForm.score ? parseInt(feedbackForm.score) : null
+            );
+            console.log('Camunda task completed successfully');
+          } catch (workflowErr) {
+            console.error('Failed to complete Camunda task:', workflowErr);
+            // Don't fail the operation if workflow fails
+          }
+        }
       } else {
         // For interns, create or update hiring round
         await api.createOrUpdateHiringRound({
@@ -221,6 +249,21 @@ const HiringRounds = () => {
           feedback: feedbackForm.feedback,
           score: feedbackForm.score ? parseFloat(feedbackForm.score) : null
         });
+        
+        // Complete Camunda task if exists
+        if (camundaTaskId) {
+          try {
+            await api.completeHiringRound(
+              camundaTaskId,
+              feedbackForm.status,
+              feedbackForm.feedback,
+              feedbackForm.score ? parseInt(feedbackForm.score) : null
+            );
+            console.log('Camunda task completed successfully');
+          } catch (workflowErr) {
+            console.error('Failed to complete Camunda task:', workflowErr);
+          }
+        }
       }
       
       setToast({ message: 'Feedback saved successfully!', type: 'success' });
