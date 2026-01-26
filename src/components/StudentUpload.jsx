@@ -123,13 +123,7 @@ const StudentUpload = () => {
   };
 
   const getStatusIcon = (status) => {
-    const statusMap = {
-      'PENDING': '⏳',
-      'CLEARED': '✅',
-      'REJECTED': '❌',
-      'ON_HOLD': '⏸️'
-    };
-    return statusMap[status] || '📋';
+    return status;
   };
 
   return (
@@ -144,10 +138,10 @@ const StudentUpload = () => {
           </div>
           <div className="header-actions">
             <button className="btn btn-outline" onClick={handleBulkUpload}>
-              📥 Bulk Upload CSV
+              Bulk Upload CSV
             </button>
             <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-              ➕ Add Student
+              Add Student
             </button>
           </div>
         </header>
@@ -155,28 +149,24 @@ const StudentUpload = () => {
         {/* Stats */}
         <div className="stats-grid">
           <div className="stat-card">
-            <div className="stat-icon" style={{ background: '#dbeafe' }}>👥</div>
             <div>
               <div className="stat-value">{students.length}</div>
               <div className="stat-label">Total Students</div>
             </div>
           </div>
           <div className="stat-card">
-            <div className="stat-icon" style={{ background: '#dcfce7' }}>✅</div>
             <div>
               <div className="stat-value">{students.filter(s => s.hiringStatus === 'CLEARED').length}</div>
               <div className="stat-label">Selected</div>
             </div>
           </div>
           <div className="stat-card">
-            <div className="stat-icon" style={{ background: '#fef3c7' }}>⏳</div>
             <div>
               <div className="stat-value">{students.filter(s => s.hiringStatus === 'PENDING').length}</div>
               <div className="stat-label">In Progress</div>
             </div>
           </div>
           <div className="stat-card">
-            <div className="stat-icon" style={{ background: '#fee2e2' }}>❌</div>
             <div>
               <div className="stat-value">{students.filter(s => s.hiringStatus === 'REJECTED').length}</div>
               <div className="stat-label">Not Selected</div>
@@ -193,7 +183,6 @@ const StudentUpload = () => {
           <div className="students-list">
             {students.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-                <div style={{ fontSize: '64px', marginBottom: '16px' }}>📚</div>
                 <h3 style={{ marginBottom: '8px', color: '#374151' }}>No students uploaded yet</h3>
                 <p style={{ color: '#6b7280', marginBottom: '24px' }}>Start by adding students to your recruitment pool</p>
                 <button className="btn btn-primary" onClick={() => setShowModal(true)}>
@@ -236,9 +225,6 @@ const StudentUpload = () => {
                         </span>
                       </td>
                       <td>
-                        <span style={{ fontSize: '20px', marginRight: '8px' }}>
-                          {getStatusIcon(student.hiringStatus)}
-                        </span>
                         {student.hiringStatus || 'PENDING'}
                       </td>
                       <td>
@@ -247,7 +233,7 @@ const StudentUpload = () => {
                             className="btn btn-sm btn-outline"
                             onClick={() => window.open(api.getCandidateResumeUrl(student.id), '_blank')}
                           >
-                            📄 View Resume
+                            View Resume
                           </button>
                         ) : (
                           <span style={{ color: '#9ca3af', fontSize: '14px' }}>No resume</span>

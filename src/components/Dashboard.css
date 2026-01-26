@@ -77,10 +77,6 @@
   border-right: 3px solid var(--primary-color);
 }
 
-.nav-icon {
-  font-size: 20px;
-}
-
 .sidebar-footer {
   padding: 16px 20px;
   border-top: 1px solid var(--border-color);
@@ -187,23 +183,13 @@
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
   display: flex;
-  gap: 20px;
-  align-items: flex-start;
+  flex-direction: column;
   transition: all 0.3s ease;
 }
 
 .stat-card:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
-}
-
-.stat-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .stat-content {

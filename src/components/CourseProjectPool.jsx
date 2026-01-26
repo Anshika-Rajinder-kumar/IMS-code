@@ -89,13 +89,13 @@ const CourseProjectPool = () => {
                         </div>
                         <p className="pool-item-desc">{item.description}</p>
                         <div className="pool-item-footer">
-                            <span className="duration">⏱️ {item.duration}</span>
+                            <span className="duration">{item.duration}</span>
                             <button
                                 className="btn-delete-icon"
                                 onClick={() => handleDelete(item.id, type)}
                                 title="Delete"
                             >
-                                🗑️
+                                Delete
                             </button>
                         </div>
                     </div>

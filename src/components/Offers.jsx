@@ -178,7 +178,7 @@ const Offers = () => {
           </div>
           <div className="header-actions">
             <button className="btn btn-outline">
-              📊 Offer Report
+              Offer Report
             </button>
           </div>
         </header>
@@ -186,21 +186,18 @@ const Offers = () => {
         {/* Stats */}
         <div className="stats-bar" style={{ marginBottom: '32px' }}>
           <div className="stat-item">
-            <span className="stat-icon">📄</span>
             <div>
               <div className="stat-number">{offers.length}</div>
               <div className="stat-label">Total Offers</div>
             </div>
           </div>
           <div className="stat-item">
-            <span className="stat-icon">✅</span>
             <div>
               <div className="stat-number">{offers.filter(o => o.status === 'SENT').length}</div>
               <div className="stat-label">Sent</div>
             </div>
           </div>
           <div className="stat-item">
-            <span className="stat-icon">⏳</span>
             <div>
               <div className="stat-number">{getInternsReadyForOffer().length}</div>
               <div className="stat-label">Ready to Generate</div>
@@ -234,7 +231,7 @@ const Offers = () => {
                     className="btn btn-primary btn-sm"
                     onClick={() => handleGenerateOffer(intern)}
                   >
-                    ✍️ Generate Offer
+                    Generate Offer
                   </button>
                 </div>
               ))}
@@ -271,7 +268,6 @@ const Offers = () => {
                         <td>{offer.generatedAt ? new Date(offer.generatedAt).toLocaleDateString() : 'N/A'}</td>
                         <td>
                           <span className={`badge ${getStatusBadge(offer.status)}`}>
-                            {offer.status === 'SENT' ? '✓ ' : ''}
                             {formatStatus(offer.status)}
                           </span>
                         </td>
@@ -284,20 +280,20 @@ const Offers = () => {
                                 if (intern) handlePreview(intern);
                               }}
                             >
-                              👁️ Preview
+                              Preview
                             </button>
                             <button 
                               className="btn btn-outline btn-sm"
                               onClick={() => handleDownload(offer.id)}
                             >
-                              ⬇️ Download
+                              Download
                             </button>
                             {offer.status !== 'SENT' && offer.status !== 'ACCEPTED' && (
                               <button 
                                 className="btn btn-primary btn-sm"
                                 onClick={() => handleSendEmail(offer.id)}
                               >
-                                📧 Send
+                                Send
                               </button>
                             )}
                           </div>

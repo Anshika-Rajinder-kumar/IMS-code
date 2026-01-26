@@ -51,10 +51,10 @@ const LearningProgress = () => {
               {course.description}
             </p>
             <div className="module-meta" style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid #f3f4f6' }}>
-              <span title="Duration">⏱️ {course.duration}</span>
+              <span title="Duration">{course.duration}</span>
             </div>
             <button className="btn btn-primary btn-block" style={{ marginTop: '16px' }}>
-              ▶️ Start Course
+              Start Course
             </button>
           </div>
         ))
@@ -79,12 +79,12 @@ const LearningProgress = () => {
               <span className="badge badge-info">{project.difficulty}</span>
             </div>
             <div className="project-info" style={{ marginTop: '16px', display: 'flex', gap: '20px' }}>
-              <span>⏱️ Duration: {project.duration}</span>
-              <span>🛠️ Type: Internship Project</span>
+              <span>Duration: {project.duration}</span>
+              <span>Type: Internship Project</span>
             </div>
             <div className="project-actions" style={{ marginTop: '20px' }}>
-              <button className="btn btn-outline btn-sm">📂 View Details</button>
-              <button className="btn btn-primary btn-sm">🚀 Get Started</button>
+              <button className="btn btn-outline btn-sm">View Details</button>
+              <button className="btn btn-primary btn-sm">Get Started</button>
             </div>
           </div>
         ))
@@ -98,7 +98,6 @@ const LearningProgress = () => {
         <Sidebar />
         <main className="main-content">
           <div style={{ textAlign: 'center', padding: '100px' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
             <p>Loading your learning journey...</p>
           </div>
         </main>

@@ -18,7 +18,6 @@ const InternDocuments = () => {
     { 
       label: 'Aadhaar Card',
       name: 'AADHAAR',
-      icon: '🆔',
       description: 'Government issued identity proof',
       required: true,
       type: 'IDENTITY'
@@ -26,7 +25,6 @@ const InternDocuments = () => {
     { 
       label: 'PAN Card',
       name: 'PAN',
-      icon: '💳',
       description: 'Permanent Account Number card',
       required: true,
       type: 'IDENTITY'
@@ -34,7 +32,6 @@ const InternDocuments = () => {
     { 
       label: '10th Certificate',
       name: 'CLASS_10',
-      icon: '📜',
       description: 'Class 10th mark sheet or certificate',
       required: true,
       type: 'EDUCATION'
@@ -42,7 +39,6 @@ const InternDocuments = () => {
     { 
       label: '12th Certificate',
       name: 'CLASS_12',
-      icon: '📜',
       description: 'Class 12th mark sheet or certificate',
       required: true,
       type: 'EDUCATION'
@@ -50,7 +46,6 @@ const InternDocuments = () => {
     { 
       label: 'Degree Certificate',
       name: 'DEGREE',
-      icon: '🎓',
       description: 'Bachelor degree or provisional certificate',
       required: true,
       type: 'EDUCATION'
@@ -58,7 +53,6 @@ const InternDocuments = () => {
     { 
       label: 'Resume/CV',
       name: 'RESUME',
-      icon: '📄',
       description: 'Updated resume in PDF format',
       required: true,
       type: 'EDUCATION'
@@ -66,7 +60,6 @@ const InternDocuments = () => {
     { 
       label: 'Passport Size Photo',
       name: 'PHOTO',
-      icon: '📸',
       description: 'Recent passport size photograph',
       required: true,
       type: 'IDENTITY'
@@ -74,7 +67,6 @@ const InternDocuments = () => {
     { 
       label: 'Bank Passbook',
       name: 'BANK_PASSBOOK',
-      icon: '🏦',
       description: 'First page of bank passbook or cancelled cheque',
       required: true,
       type: 'OTHER'
@@ -264,12 +256,7 @@ const InternDocuments = () => {
   };
 
   const getStatusIcon = (status) => {
-    const iconMap = {
-      'VERIFIED': '✅',
-      'PENDING': '⏳',
-      'REJECTED': '❌'
-    };
-    return iconMap[status] || '📄';
+    return status;
   };
 
   const getStatusMessage = (status) => {
@@ -336,28 +323,24 @@ const InternDocuments = () => {
         {/* Document Stats */}
         <div className="stats-bar" style={{ marginBottom: '32px' }}>
           <div className="stat-item">
-            <span className="stat-icon">📁</span>
             <div>
               <div className="stat-number">{uploadedCount}/{totalRequired}</div>
               <div className="stat-label">Uploaded</div>
             </div>
           </div>
           <div className="stat-item">
-            <span className="stat-icon">✅</span>
             <div>
               <div className="stat-number">{verifiedCount}</div>
               <div className="stat-label">Verified</div>
             </div>
           </div>
           <div className="stat-item">
-            <span className="stat-icon">⏳</span>
             <div>
               <div className="stat-number">{pendingCount}</div>
               <div className="stat-label">Under Review</div>
             </div>
           </div>
           <div className="stat-item">
-            <span className="stat-icon">⚠️</span>
             <div>
               <div className="stat-number">{totalRequired - uploadedCount}</div>
               <div className="stat-label">Pending Upload</div>
@@ -418,23 +401,6 @@ const InternDocuments = () => {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-                    {/* Icon and Label */}
-                    <div style={{ 
-                      fontSize: '40px',
-                      width: '60px',
-                      height: '60px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: doc.uploaded 
-                        ? (doc.status === 'VERIFIED' ? '#d1fae5' : 
-                           doc.status === 'PENDING' ? '#fef3c7' : '#f3f4f6')
-                        : '#f3f4f6',
-                      borderRadius: '12px',
-                      flexShrink: 0
-                    }}>
-                      {doc.icon}
-                    </div>
                     
                     {/* Document Info */}
                     <div style={{ flex: 1, minWidth: '200px' }}>
@@ -467,12 +433,12 @@ const InternDocuments = () => {
                       {/* File Details if uploaded */}
                       {doc.uploaded && (
                         <div style={{ fontSize: '12px', color: '#666', display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
-                          <span>📄 {doc.filePath?.split('/').pop() || 'Document'}</span>
-                          <span>💾 {doc.size || 'Unknown size'}</span>
-                          <span>📅 {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : 'N/A'}</span>
+                          <span>{doc.filePath?.split('/').pop() || 'Document'}</span>
+                          <span>{doc.size || 'Unknown size'}</span>
+                          <span>{doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : 'N/A'}</span>
                           {doc.verifiedBy && (
                             <span style={{ color: '#10b981', fontWeight: '500' }}>
-                              ✓ Verified by {doc.verifiedBy}
+                              Verified by {doc.verifiedBy}
                             </span>
                           )}
                         </div>
@@ -536,9 +502,9 @@ const InternDocuments = () => {
                       color: doc.status === 'VERIFIED' ? '#065f46' : 
                              doc.status === 'PENDING' ? '#78350f' : '#991b1b'
                     }}>
-                      {doc.status === 'VERIFIED' && '✅ Your document has been verified and approved'}
-                      {doc.status === 'PENDING' && '⏳ Your document is under review by HR team'}
-                      {doc.status === 'REJECTED' && '❌ Your document was rejected. Please upload a new one'}
+                      {doc.status === 'VERIFIED' && 'Your document has been verified and approved'}
+                      {doc.status === 'PENDING' && 'Your document is under review by HR team'}
+                      {doc.status === 'REJECTED' && 'Your document was rejected. Please upload a new one'}
                     </div>
                   )}
                 </div>
@@ -570,7 +536,7 @@ const InternDocuments = () => {
             <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
               <div className="modal-header">
                 <h2 className="modal-title">
-                  {selectedDoc.icon} Upload {selectedDoc.label}
+                  Upload {selectedDoc.label}
                 </h2>
                 <button className="modal-close" onClick={() => setShowUploadModal(false)}>×</button>
               </div>

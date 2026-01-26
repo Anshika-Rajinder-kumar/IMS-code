@@ -31,30 +31,30 @@ const Sidebar = () => {
 
     if (userType === 'ADMIN' || userType === 'HR') {
       return [
-        { path: '/dashboard', icon: '📊', label: 'Dashboard' },
-        { path: '/colleges', icon: '🏫', label: 'Colleges' },
-        { path: '/admin/course-project-pool', icon: '🏊‍♂️', label: 'Courses / Projects' },
-        { path: '/admin/learning-assignment', icon: '📝', label: 'Assign Courses' },
-        { path: '/hiring-rounds', icon: '🎯', label: 'Hiring Rounds' },
-        { path: '/interns', icon: '👥', label: 'Interns' },
-        { path: '/documents', icon: '📁', label: 'Documents' },
-        { path: '/offers', icon: '📄', label: 'Offer Letters' },
-        { path: '/reports', icon: '📈', label: 'Reports' },
-        { path: '/settings', icon: '⚙️', label: 'Settings' }
+        { path: '/dashboard', label: 'Dashboard' },
+        { path: '/colleges', label: 'Colleges' },
+        { path: '/admin/course-project-pool', label: 'Courses / Projects' },
+        { path: '/admin/learning-assignment', label: 'Assign Courses' },
+        { path: '/hiring-rounds', label: 'Hiring Rounds' },
+        { path: '/interns', label: 'Interns' },
+        { path: '/documents', label: 'Documents' },
+        { path: '/offers', label: 'Offer Letters' },
+        { path: '/reports', label: 'Reports' },
+        { path: '/settings', label: 'Settings' }
       ];
     } else if (userType === 'COLLEGE') {
       return [
-        { path: '/students', icon: '👨‍🎓', label: 'Students' },
-        { path: '/bulk-upload', icon: '📤', label: 'Bulk Upload' },
-        { path: '/hiring-status', icon: '📋', label: 'Hiring Status' },
-        { path: '/settings', icon: '⚙️', label: 'Settings' }
+        { path: '/students', label: 'Students' },
+        { path: '/bulk-upload', label: 'Bulk Upload' },
+        { path: '/hiring-status', label: 'Hiring Status' },
+        { path: '/settings', label: 'Settings' }
       ];
     } else if (userType === 'INTERN') {
       return [
-        { path: '/learning', icon: '📚', label: 'My Learning' },
-        { path: '/documents', icon: '📁', label: 'My Documents' },
-        { path: '/offer', icon: '📄', label: 'My Offer' },
-        { path: '/settings', icon: '⚙️', label: 'Settings' }
+        { path: '/learning', label: 'My Learning' },
+        { path: '/documents', label: 'My Documents' },
+        { path: '/offer', label: 'My Offer' },
+        { path: '/settings', label: 'Settings' }
       ];
     }
 
@@ -78,7 +78,6 @@ const Sidebar = () => {
             onClick={(e) => { e.preventDefault(); navigate(item.path); }}
             className={`nav-item ${isActive(item.path)}`}
           >
-            <span className="nav-icon">{item.icon}</span>
             <span>{item.label}</span>
           </a>
         ))}
@@ -93,7 +92,7 @@ const Sidebar = () => {
           </div>
         </div>
         <button onClick={handleLogout} className="btn-logout">
-          🚪 Logout
+          Logout
         </button>
       </div>
     </aside>

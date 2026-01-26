@@ -66,12 +66,12 @@ const HiringStatus = () => {
 
   const getStatusBadge = (status) => {
     const statusMap = {
-      'CLEARED': { class: 'badge-success', icon: '✅' },
-      'PENDING': { class: 'badge-warning', icon: '⏳' },
-      'REJECTED': { class: 'badge-danger', icon: '❌' },
-      'ON_HOLD': { class: 'badge-secondary', icon: '⏸️' }
+      'CLEARED': { class: 'badge-success', icon: '' },
+      'PENDING': { class: 'badge-warning', icon: '' },
+      'REJECTED': { class: 'badge-danger', icon: '' },
+      'ON_HOLD': { class: 'badge-secondary', icon: '' }
     };
-    return statusMap[status] || { class: 'badge-secondary', icon: '📋' };
+    return statusMap[status] || { class: 'badge-secondary', icon: '' };
   };
 
   const getRoundColor = (round) => {
@@ -150,28 +150,24 @@ const HiringStatus = () => {
         {/* Stats Cards */}
         <div className="stats-grid">
           <div className="stat-card stat-card-blue">
-            <div className="stat-icon-box">👥</div>
             <div className="stat-details">
               <div className="stat-value">{stats.total}</div>
               <div className="stat-label">Total Students</div>
             </div>
           </div>
           <div className="stat-card stat-card-green">
-            <div className="stat-icon-box">✅</div>
             <div className="stat-details">
               <div className="stat-value">{stats.selected}</div>
               <div className="stat-label">Selected</div>
             </div>
           </div>
           <div className="stat-card stat-card-yellow">
-            <div className="stat-icon-box">⏳</div>
             <div className="stat-details">
               <div className="stat-value">{stats.pending}</div>
               <div className="stat-label">In Progress</div>
             </div>
           </div>
           <div className="stat-card stat-card-red">
-            <div className="stat-icon-box">❌</div>
             <div className="stat-details">
               <div className="stat-value">{stats.rejected}</div>
               <div className="stat-label">Not Selected</div>
@@ -183,7 +179,6 @@ const HiringStatus = () => {
         <div className="card filters-card">
           <div className="filters-container">
             <div className="search-wrapper">
-              <span className="search-icon">🔍</span>
               <input
                 type="text"
                 placeholder="Search by name, email, or branch..."
@@ -221,7 +216,6 @@ const HiringStatus = () => {
         <div className="students-grid">
           {filteredStudents.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">🔍</div>
               <div className="empty-title">No students found</div>
               <div className="empty-subtitle">Try adjusting your search or filters</div>
             </div>
@@ -242,19 +236,15 @@ const HiringStatus = () => {
                   
                   <div className="student-details">
                     <div className="detail-row">
-                      <span className="detail-icon">🎓</span>
                       <span className="detail-text">{student.branch}</span>
                     </div>
                     <div className="detail-row">
-                      <span className="detail-icon">📊</span>
                       <span className="detail-text">CGPA: <strong>{student.cgpa}</strong></span>
                     </div>
                     <div className="detail-row">
-                      <span className="detail-icon">📅</span>
                       <span className="detail-text">Class of {student.graduationYear || 'N/A'}</span>
                     </div>
                     <div className="detail-row">
-                      <span className="detail-icon">📞</span>
                       <span className="detail-text">{student.phone}</span>
                     </div>
                   </div>

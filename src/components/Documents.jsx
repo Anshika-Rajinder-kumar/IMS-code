@@ -244,14 +244,7 @@ const Documents = () => {
   };
 
   const getDocumentIcon = (type) => {
-    const iconMap = {
-      'PDF': '📄',
-      'JPG': '🖼️',
-      'PNG': '🖼️',
-      'DOC': '📝',
-      'DOCX': '📝'
-    };
-    return iconMap[type?.toUpperCase()] || '📎';
+    return '';
   };
 
   const getVerificationStatus = (docs) => {
@@ -311,7 +304,7 @@ const Documents = () => {
           </div>
           <div className="header-actions">
             <button className="btn btn-outline" onClick={fetchInternsWithDocuments}>
-              🔄 Refresh
+              Refresh
             </button>
           </div>
         </header>
@@ -319,28 +312,24 @@ const Documents = () => {
         {/* Stats Overview */}
         <div className="stats-bar" style={{ marginBottom: '24px' }}>
           <div className="stat-item">
-            <span className="stat-icon">📁</span>
             <div>
               <div className="stat-number">{totalDocs}</div>
               <div className="stat-label">Total Documents</div>
             </div>
           </div>
           <div className="stat-item">
-            <span className="stat-icon">✅</span>
             <div>
               <div className="stat-number">{verifiedDocs}</div>
               <div className="stat-label">Verified</div>
             </div>
           </div>
           <div className="stat-item">
-            <span className="stat-icon">⏳</span>
             <div>
               <div className="stat-number">{pendingDocs}</div>
               <div className="stat-label">Pending</div>
             </div>
           </div>
           <div className="stat-item">
-            <span className="stat-icon">❌</span>
             <div>
               <div className="stat-number">{rejectedDocs}</div>
               <div className="stat-label">Rejected</div>
@@ -358,7 +347,6 @@ const Documents = () => {
         <div className="card" style={{ marginBottom: '24px', padding: '16px' }}>
           <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
             <div className="search-box" style={{ flex: 1, minWidth: '300px' }}>
-              <span className="search-icon">🔍</span>
               <input
                 type="text"
                 placeholder="Search by intern name or college..."
@@ -378,13 +366,13 @@ const Documents = () => {
                 className={`btn ${filterStatus === 'VERIFIED' ? 'btn-primary' : 'btn-outline'}`}
                 onClick={() => setFilterStatus('VERIFIED')}
               >
-                ✅ Document Verified
+                Document Verified
               </button>
               <button 
                 className={`btn ${filterStatus === 'PENDING' ? 'btn-primary' : 'btn-outline'}`}
                 onClick={() => setFilterStatus('PENDING')}
               >
-                ⏳ Under Verification
+                Under Verification
               </button>
             </div>
           </div>
@@ -456,7 +444,7 @@ const Documents = () => {
                           className="btn btn-success"
                           onClick={(e) => { e.stopPropagation(); handleVerifyInternStatus(intern.id); }}
                         >
-                          ✅ Verify Status
+                          Verify Status
                         </button>
                       )}
                       {intern.documents && intern.documents.length > 0 && (
@@ -465,7 +453,7 @@ const Documents = () => {
                           onClick={(e) => { e.stopPropagation(); handleVerifyAllDocuments(intern.id); }}
                           disabled={!intern.documents.some(d => d.status === 'PENDING')}
                         >
-                          📄 Verify All Documents
+                          Verify All Documents
                         </button>
                       )}
                     </div>
@@ -489,9 +477,6 @@ const Documents = () => {
                                 backgroundColor: '#f9fafb'
                               }}
                             >
-                              <div style={{ fontSize: '32px' }}>
-                                {getDocumentIcon(doc.type)}
-                              </div>
                               <div style={{ flex: 1 }}>
                                 <div style={{ fontWeight: '500', marginBottom: '4px' }}>
                                   {doc.label || doc.name}
@@ -514,14 +499,14 @@ const Documents = () => {
                                   onClick={() => handleViewDocument(doc.id)}
                                   title="View Document"
                                 >
-                                  👁️ View
+                                  View
                                 </button>
                                 <button
                                   className="btn btn-outline btn-sm"
                                   onClick={() => handleDownloadDocument(doc.id, doc.name)}
                                   title="Download Document"
                                 >
-                                  📥 Download
+                                  Download
                                 </button>
                                 {doc.status === 'PENDING' && (
                                   <>
@@ -529,13 +514,13 @@ const Documents = () => {
                                       className="btn btn-success btn-sm"
                                       onClick={() => handleVerifyDocument(doc.id, intern.id)}
                                     >
-                                      ✓ Verify
+                                      Verify
                                     </button>
                                     <button
                                       className="btn btn-danger btn-sm"
                                       onClick={() => handleRejectDocument(doc.id, intern.id)}
                                     >
-                                      ✕ Reject
+                                      Reject
                                     </button>
                                   </>
                                 )}

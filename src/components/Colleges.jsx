@@ -154,7 +154,7 @@ const Colleges = () => {
               📥 Export List
             </button>
             <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-              ➕ Add College Visit
+              Add College Visit
             </button>
           </div>
         </header>
@@ -163,7 +163,6 @@ const Colleges = () => {
         <div className="card" style={{ marginBottom: '24px' }}>
           <div className="filters-row">
             <div className="search-box">
-              <span className="search-icon">🔍</span>
               <input
                 type="text"
                 placeholder="Search colleges by name or location..."
@@ -206,14 +205,13 @@ const Colleges = () => {
           {!error && filteredColleges.map(college => (
             <div key={college.id} className="college-card fade-in">
               <div className="college-header">
-                <div className="college-icon">🏫</div>
                 <span className={`badge ${getStatusBadge(college.status)}`}>
-                  {college.status === 'COMPLETED' ? '✓ Completed' : college.status === 'CANCELLED' ? '✗ Cancelled' : '📅 Scheduled'}
+                  {college.status === 'COMPLETED' ? 'Completed' : college.status === 'CANCELLED' ? 'Cancelled' : 'Scheduled'}
                 </span>
               </div>
               
               <h3 className="college-name">{college.name}</h3>
-              <p className="college-location">📍 {college.location}</p>
+              <p className="college-location">{college.location}</p>
               
               <div className="college-details">
                 <div className="detail-item">
@@ -233,13 +231,11 @@ const Colleges = () => {
               <div className="college-contact">
                 {college.email && (
                   <div className="contact-item">
-                    <span>📧</span>
                     <span>{college.email}</span>
                   </div>
                 )}
                 {college.phone && (
                   <div className="contact-item">
-                    <span>📞</span>
                     <span>{college.phone}</span>
                   </div>
                 )}
@@ -247,7 +243,7 @@ const Colleges = () => {
 
               <div className="college-actions">
                 <button className="btn btn-outline btn-sm" onClick={() => handleEdit(college)}>
-                  ✏️ Edit
+                  Edit
                 </button>
                 <button className="btn btn-danger btn-sm" onClick={() => handleDelete(college.id)}>
                   🗑️ Delete

@@ -58,10 +58,10 @@ const Dashboard = () => {
   };
 
   const displayStats = [
-    { title: 'Total Interns', value: stats.totalInterns || '0', change: '+12%', icon: '👥', color: '#3b82f6' },
-    { title: 'Active Interns', value: stats.activeInterns || '0', change: '+5', icon: '📋', color: '#10b981' },
-    { title: 'Total Colleges', value: stats.totalColleges || '0', change: '+3', icon: '🏫', color: '#f59e0b' },
-    { title: 'Offers Generated', value: stats.totalOffers || '0', change: '+18', icon: '📄', color: '#8b5cf6' },
+    { title: 'Total Interns', value: stats.totalInterns || '0', change: '+12%', color: '#3b82f6' },
+    { title: 'Active Interns', value: stats.activeInterns || '0', change: '+5', color: '#10b981' },
+    { title: 'Total Colleges', value: stats.totalColleges || '0', change: '+3', color: '#f59e0b' },
+    { title: 'Offers Generated', value: stats.totalOffers || '0', change: '+18', color: '#8b5cf6' },
   ];
 
   const getStatusBadge = (status) => {
@@ -104,7 +104,6 @@ const Dashboard = () => {
       <div className="dashboard-container">
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
             <div style={{ fontSize: '18px', color: '#666' }}>Loading dashboard...</div>
           </div>
         </div>
@@ -125,10 +124,10 @@ const Dashboard = () => {
           </div>
           <div className="header-actions">
             <button className="btn btn-outline">
-              📥 Export Report
+              Export Report
             </button>
             <button className="btn btn-primary" onClick={() => navigate('/interns')}>
-              ➕ Add Intern
+              Add Intern
             </button>
           </div>
         </header>
@@ -137,9 +136,6 @@ const Dashboard = () => {
         <div className="stats-grid">
           {displayStats.map((stat, index) => (
             <div key={index} className="stat-card fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
-              <div className="stat-icon" style={{ backgroundColor: `${stat.color}20` }}>
-                <span style={{ fontSize: '32px' }}>{stat.icon}</span>
-              </div>
               <div className="stat-content">
                 <div className="stat-label">{stat.title}</div>
                 <div className="stat-value">{stat.value}</div>
@@ -215,15 +211,14 @@ const Dashboard = () => {
               ) : (
                 upcomingVisits.map((visit, index) => (
                   <div key={index} className="visit-item">
-                    <div className="visit-icon">🏫</div>
                     <div className="visit-details">
                       <div className="visit-college">{visit.name}</div>
                       <div className="visit-meta">
-                        <span>📅 {formatDate(visit.visitDate)}</span>
+                        <span>{formatDate(visit.visitDate)}</span>
                         <span>•</span>
-                        <span>👤 {visit.coordinator || 'TBA'}</span>
+                        <span>{visit.coordinator || 'TBA'}</span>
                         <span>•</span>
-                        <span>📍 {visit.location}</span>
+                        <span>{visit.location}</span>
                       </div>
                     </div>
                     <button className="btn btn-outline btn-sm" onClick={() => navigate('/colleges')}>Details</button>

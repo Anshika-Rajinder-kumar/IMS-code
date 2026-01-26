@@ -176,10 +176,10 @@ const Interns = () => {
           </div>
           <div className="header-actions">
             <button className="btn btn-outline">
-              📥 Export Data
+              Export Data
             </button>
             <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-              ➕ Add Intern
+              Add Intern
             </button>
           </div>
         </header>
@@ -187,28 +187,24 @@ const Interns = () => {
         {/* Stats Bar */}
         <div className="stats-bar">
           <div className="stat-item">
-            <span className="stat-icon">👥</span>
             <div>
               <div className="stat-number">{interns.length}</div>
               <div className="stat-label">Total Interns</div>
             </div>
           </div>
           <div className="stat-item">
-            <span className="stat-icon">✅</span>
             <div>
               <div className="stat-number">{interns.filter(i => i.status === 'ACTIVE').length}</div>
               <div className="stat-label">Active</div>
             </div>
           </div>
           <div className="stat-item">
-            <span className="stat-icon">📋</span>
             <div>
               <div className="stat-number">{interns.filter(i => i.status === 'ONBOARDING').length}</div>
               <div className="stat-label">Onboarding</div>
             </div>
           </div>
           <div className="stat-item">
-            <span className="stat-icon">⏳</span>
             <div>
               <div className="stat-number">{interns.filter(i => i.status === 'DOCUMENT_PENDING').length}</div>
               <div className="stat-label">Pending</div>
@@ -232,7 +228,6 @@ const Interns = () => {
         <div className="card" style={{ marginBottom: '24px' }}>
           <div className="filters-row">
             <div className="search-box">
-              <span className="search-icon">🔍</span>
               <input
                 type="text"
                 placeholder="Search by name, college, or email..."
@@ -297,29 +292,25 @@ const Interns = () => {
 
                 <div className="intern-details">
                   <div className="detail-row">
-                    <span className="detail-icon">🎓</span>
                     <span>{intern.branch || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
-                    <span className="detail-icon">📊</span>
                     <span>CGPA: {intern.cgpa || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
-                    <span className="detail-icon">📅</span>
                     <span>{intern.joinDate || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
-                    <span className="detail-icon">📧</span>
                     <span className="detail-email">{intern.email}</span>
                   </div>
                 </div>
 
                 <div className="intern-actions">
                   <button className="btn btn-outline btn-sm" onClick={() => handleEdit(intern)}>
-                    ✏️ Edit
+                    Edit
                   </button>
                   <button className="btn btn-primary btn-sm" onClick={() => navigate(`/documents`)}>
-                    📁 Documents
+                    Documents
                   </button>
                 </div>
               </div>

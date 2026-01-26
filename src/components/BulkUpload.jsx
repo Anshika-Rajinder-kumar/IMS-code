@@ -82,7 +82,7 @@ const BulkUpload = () => {
       <main className="main-content">
         <header className="dashboard-header">
           <div>
-            <h1 className="page-title">📤 Bulk Upload Candidates</h1>
+            <h1 className="page-title">Bulk Upload Candidates</h1>
             <p className="page-subtitle">Upload multiple candidates using CSV file</p>
           </div>
         </header>
@@ -90,7 +90,7 @@ const BulkUpload = () => {
         <div className="bulk-upload-container">
           {/* Instructions Card */}
           <div className="card">
-            <h2 className="card-title">📋 Instructions</h2>
+            <h2 className="card-title">Instructions</h2>
             <div className="instructions">
               <ol>
                 <li>Download the CSV template below</li>
@@ -100,14 +100,14 @@ const BulkUpload = () => {
                 <li>Upload the completed CSV file</li>
               </ol>
               <button className="btn btn-outline" onClick={downloadTemplate}>
-                📥 Download CSV Template
+                Download CSV Template
               </button>
             </div>
           </div>
 
           {/* Upload Card */}
           <div className="card">
-            <h2 className="card-title">📁 Upload CSV File</h2>
+            <h2 className="card-title">Upload CSV File</h2>
             <div className="upload-section">
               <div className="file-input-wrapper">
                 <input
@@ -118,7 +118,7 @@ const BulkUpload = () => {
                   className="file-input"
                 />
                 <label htmlFor="fileInput" className="file-input-label">
-                  {file ? `📄 ${file.name}` : '📁 Choose CSV File'}
+                  {file ? file.name : 'Choose CSV File'}
                 </label>
               </div>
 
@@ -127,7 +127,7 @@ const BulkUpload = () => {
                 onClick={handleUpload}
                 disabled={!file || uploading}
               >
-                {uploading ? '⏳ Uploading...' : '📤 Upload Candidates'}
+                {uploading ? 'Uploading...' : 'Upload Candidates'}
               </button>
             </div>
           </div>
@@ -135,7 +135,7 @@ const BulkUpload = () => {
           {/* Results Card */}
           {result && (
             <div className="card">
-              <h2 className="card-title">📊 Upload Results</h2>
+              <h2 className="card-title">Upload Results</h2>
               <div className="results">
                 <div className="stats-row">
                   <div className="stat-card">
@@ -143,18 +143,18 @@ const BulkUpload = () => {
                     <div className="stat-label">Total Rows</div>
                   </div>
                   <div className="stat-card success">
-                    <div className="stat-value">✅ {result.successCount}</div>
+                    <div className="stat-value">{result.successCount}</div>
                     <div className="stat-label">Successful</div>
                   </div>
                   <div className="stat-card error">
-                    <div className="stat-value">❌ {result.failureCount}</div>
+                    <div className="stat-value">{result.failureCount}</div>
                     <div className="stat-label">Failed</div>
                   </div>
                 </div>
 
                 {result.successMessages && result.successMessages.length > 0 && (
                   <div className="messages-section">
-                    <h3 className="messages-title success-title">✅ Successful Uploads</h3>
+                    <h3 className="messages-title success-title">Successful Uploads</h3>
                     <div className="messages-list">
                       {result.successMessages.map((msg, idx) => (
                         <div key={idx} className="message success-message">{msg}</div>
@@ -165,7 +165,7 @@ const BulkUpload = () => {
 
                 {result.errors && result.errors.length > 0 && (
                   <div className="messages-section">
-                    <h3 className="messages-title error-title">❌ Errors</h3>
+                    <h3 className="messages-title error-title">Errors</h3>
                     <div className="messages-list">
                       {result.errors.map((error, idx) => (
                         <div key={idx} className="message error-message">{error}</div>

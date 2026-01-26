@@ -40,16 +40,11 @@
   background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
 }
 
-.stage-icon {
-  font-size: 36px;
-  margin-bottom: 12px;
-}
-
 .stage-name {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
-  margin-bottom: 8px;
-  opacity: 0.9;
+  margin-bottom: 12px;
+  opacity: 0.95;
 }
 
 .stage-count {

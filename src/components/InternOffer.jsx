@@ -92,7 +92,7 @@ const InternOffer = () => {
       await fetchOffer(user.internId);
       await fetchInternData(user.internId);
       setShowUploadModal(false);
-      setToast({ message: '🎉 Congratulations! You have accepted the offer. HR will contact you soon with next steps.', type: 'success' });
+      setToast({ message: 'Congratulations! You have accepted the offer. HR will contact you soon with next steps.', type: 'success' });
     } catch (error) {
       console.error('Error accepting offer:', error);
       setToast({ message: 'Failed to accept offer: ' + error.message, type: 'error' });
@@ -146,7 +146,6 @@ const InternOffer = () => {
             </div>
           </header>
           <div className="card" style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
             <p>Loading offer details...</p>
           </div>
         </main>
@@ -172,7 +171,7 @@ const InternOffer = () => {
       <main className="main-content">
         <header className="dashboard-header">
           <div>
-            <h1 className="page-title">📜 My Offer Letter</h1>
+            <h1 className="page-title">My Offer Letter</h1>
             <p className="page-subtitle">View and manage your internship offer</p>
           </div>
         </header>
@@ -180,7 +179,6 @@ const InternOffer = () => {
         {/* Status: Documents Not Uploaded */}
         {internStatus === 'DOCUMENT_PENDING' && !docStats.allUploaded && (
           <div className="card" style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <div style={{ fontSize: '80px', marginBottom: '24px' }}>📄</div>
             <h2 style={{ marginBottom: '12px', color: '#333' }}>Documents Required</h2>
             <p style={{ color: '#666', fontSize: '16px', maxWidth: '600px', margin: '0 auto 24px' }}>
               Please upload all required documents to proceed with your offer letter generation.
@@ -206,7 +204,7 @@ const InternOffer = () => {
                 style={{ padding: '12px 32px', fontSize: '16px' }}
                 onClick={() => navigate('/documents')}
               >
-                📤 Upload Documents
+                Upload Documents
               </button>
             </div>
           </div>
@@ -215,7 +213,6 @@ const InternOffer = () => {
         {/* Status: Documents Uploaded - Under Verification */}
         {docStats.allUploaded && !docStats.allVerified && (
           <div className="card" style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <div style={{ fontSize: '80px', marginBottom: '24px' }}>🔍</div>
             <h2 style={{ marginBottom: '12px', color: '#333' }}>Documents Under Verification</h2>
             <p style={{ color: '#666', fontSize: '16px', maxWidth: '600px', margin: '0 auto 24px' }}>
               All required documents have been uploaded successfully! Our HR team is currently reviewing them.
@@ -232,7 +229,7 @@ const InternOffer = () => {
                 <div style={{ fontSize: '28px', fontWeight: '700', color: '#065f46' }}>
                   {docStats.verified}
                 </div>
-                <div style={{ fontSize: '14px', color: '#065f46' }}>✅ Verified</div>
+                <div style={{ fontSize: '14px', color: '#065f46' }}>Verified</div>
               </div>
 
               <div style={{
@@ -245,7 +242,7 @@ const InternOffer = () => {
                 <div style={{ fontSize: '28px', fontWeight: '700', color: '#92400e' }}>
                   {docStats.pending}
                 </div>
-                <div style={{ fontSize: '14px', color: '#92400e' }}>⏳ Pending</div>
+                <div style={{ fontSize: '14px', color: '#92400e' }}>Pending</div>
               </div>
 
               {docStats.rejected > 0 && (
@@ -259,7 +256,7 @@ const InternOffer = () => {
                   <div style={{ fontSize: '28px', fontWeight: '700', color: '#991b1b' }}>
                     {docStats.rejected}
                   </div>
-                  <div style={{ fontSize: '14px', color: '#991b1b' }}>❌ Rejected</div>
+                  <div style={{ fontSize: '14px', color: '#991b1b' }}>Rejected</div>
                 </div>
               )}
             </div>
@@ -299,7 +296,6 @@ const InternOffer = () => {
         {/* Status: Documents Verified - Offer Letter in Progress */}
         {docStats.allVerified && !offerData && (
           <div className="card" style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <div style={{ fontSize: '80px', marginBottom: '24px' }}>📝</div>
             <h2 style={{ marginBottom: '12px', color: '#333' }}>Offer Letter Being Prepared</h2>
             <p style={{ color: '#666', fontSize: '16px', maxWidth: '600px', margin: '0 auto 24px' }}>
               Excellent! All your documents have been verified. Our HR team is now preparing your offer letter.
@@ -315,9 +311,8 @@ const InternOffer = () => {
               borderRadius: '12px',
               marginTop: '16px'
             }}>
-              <span style={{ fontSize: '24px' }}>💼</span>
               <div style={{ textAlign: 'left' }}>
-                <div style={{ fontWeight: '600', color: '#1e40af' }}>All Documents Verified ✅</div>
+                <div style={{ fontWeight: '600', color: '#1e40af' }}>All Documents Verified</div>
                 <div style={{ fontSize: '14px', color: '#1e3a8a' }}>Offer letter will be ready within 2-3 business days</div>
               </div>
             </div>
@@ -337,7 +332,6 @@ const InternOffer = () => {
               alignItems: 'center',
               gap: '16px'
             }}>
-              <div style={{ fontSize: '48px' }}>🎉</div>
               <div style={{ flex: 1 }}>
                 <h3 style={{ margin: '0 0 4px 0', fontSize: '20px' }}>Your Offer Letter is Ready!</h3>
                 <p style={{ margin: 0, opacity: 0.9 }}>
@@ -414,13 +408,13 @@ const InternOffer = () => {
                   </div>
                   <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                     <button className="btn btn-outline" onClick={handleDownload}>
-                      📥 Download PDF
+                      Download PDF
                     </button>
                     <button className="btn btn-outline" onClick={() => setShowPreview(true)}>
-                      👁️ Preview
+                      Preview
                     </button>
                     <button className="btn btn-success" onClick={handleAccept}>
-                      ✅ Accept Offer
+                      Accept Offer
                     </button>
                   </div>
                 </div>
@@ -618,13 +612,13 @@ const InternOffer = () => {
               
               <div className="modal-footer">
                 <button className="btn btn-outline" onClick={handleDownload}>
-                  📥 Download
+                  Download
                 </button>
                 <button className="btn btn-success" onClick={() => {
                   setShowPreview(false);
                   handleAccept();
                 }}>
-                  ✅ Accept Offer
+                  Accept Offer
                 </button>
               </div>
             </div>
@@ -682,7 +676,7 @@ const InternOffer = () => {
                   />
                   {signedOfferFile && (
                     <p style={{ marginTop: '8px', color: '#059669', fontSize: '14px' }}>
-                      ✅ Selected: {signedOfferFile.name}
+                      Selected: {signedOfferFile.name}
                     </p>
                   )}
                 </div>
@@ -698,7 +692,7 @@ const InternOffer = () => {
                   disabled={!signedOfferFile}
                   style={{ opacity: signedOfferFile ? 1 : 0.5 }}
                 >
-                  ✅ Upload & Accept Offer
+                  Upload & Accept Offer
                 </button>
               </div>
             </div>

@@ -29,11 +29,11 @@ const HiringRounds = () => {
   });
 
   const [rounds] = useState([
-    { id: 1, name: 'Aptitude Test', order: 1, icon: '📝', color: '#3b82f6' },
-    { id: 2, name: 'Technical Round 1', order: 2, icon: '💻', color: '#8b5cf6' },
-    { id: 3, name: 'Technical Round 2', order: 3, icon: '🔧', color: '#6366f1' },
-    { id: 4, name: 'HR Round', order: 4, icon: '👔', color: '#f59e0b' },
-    { id: 5, name: 'Selected', order: 5, icon: '✅', color: '#10b981' }
+    { id: 1, name: 'Aptitude Test', order: 1, color: '#3b82f6' },
+    { id: 2, name: 'Technical Round 1', order: 2, color: '#8b5cf6' },
+    { id: 3, name: 'Technical Round 2', order: 3, color: '#6366f1' },
+    { id: 4, name: 'HR Round', order: 4, color: '#f59e0b' },
+    { id: 5, name: 'Selected', order: 5, color: '#10b981' }
   ]);
 
   const [feedbackForm, setFeedbackForm] = useState({
@@ -341,13 +341,7 @@ const HiringRounds = () => {
   };
 
   const getStatusIcon = (status) => {
-    const statusMap = {
-      'CLEARED': '✅',
-      'PENDING': '⏳',
-      'REJECTED': '❌',
-      'ON_HOLD': '⏸️'
-    };
-    return statusMap[status] || '📋';
+    return status;
   };
 
   const filteredCandidates = candidates.filter(candidate => {
@@ -374,10 +368,10 @@ const HiringRounds = () => {
           </div>
           <div className="header-actions">
             <button className="btn btn-outline">
-              📊 Hiring Report
+              Hiring Report
             </button>
             <button className="btn btn-primary" onClick={() => alert('Bulk import feature coming soon!')}>
-              📥 Import Candidates
+              Import Candidates
             </button>
           </div>
         </header>
@@ -386,7 +380,6 @@ const HiringRounds = () => {
         <div className="hiring-pipeline">
           {rounds.map(round => (
             <div key={round.id} className="pipeline-stage">
-              <div className="stage-icon">{round.icon}</div>
               <div className="stage-name">{round.name}</div>
               <div className="stage-count">{getStatsByRound(round.name)}</div>
             </div>
@@ -397,7 +390,6 @@ const HiringRounds = () => {
         <div className="card" style={{ marginBottom: '24px' }}>
           <div className="filters-row">
             <div className="search-box">
-              <span className="search-icon">🔍</span>
               <input
                 type="text"
                 placeholder="Search candidates..."
@@ -442,7 +434,6 @@ const HiringRounds = () => {
               {filteredCandidates.length === 0 ? (
                 <tr>
                   <td colSpan="9" style={{ textAlign: 'center', padding: '40px' }}>
-                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>👥</div>
                     <div style={{ color: '#666' }}>No candidates found</div>
                   </td>
                 </tr>
@@ -465,9 +456,9 @@ const HiringRounds = () => {
                     </td>
                     <td>
                       {candidate.type === 'CANDIDATE' ? (
-                        <span className="badge badge-warning">👤 Candidate</span>
+                        <span className="badge badge-warning">Candidate</span>
                       ) : (
-                        <span className="badge badge-success">👥 Intern</span>
+                        <span className="badge badge-success">Intern</span>
                       )}
                     </td>
                     <td>{candidate.collegeName || 'N/A'}</td>
@@ -481,10 +472,7 @@ const HiringRounds = () => {
                       </span>
                     </td>
                     <td>
-                      <span style={{ fontSize: '20px' }}>
-                        {getStatusIcon(candidate.hiringStatus || 'PENDING')}
-                      </span>
-                      <span style={{ marginLeft: '8px' }}>
+                      <span>
                         {candidate.hiringStatus || 'PENDING'}
                       </span>
                     </td>
@@ -505,7 +493,7 @@ const HiringRounds = () => {
                               window.open(api.getCandidateResumeUrl(candidate.id), '_blank');
                             }}
                           >
-                            📄 View Resume
+                            View Resume
                           </button>
                         )}
                       </div>
@@ -528,7 +516,7 @@ const HiringRounds = () => {
               {/* Left Panel: Resume Preview */}
               <div className="resume-panel">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                  <h3>📄 Resume Preview</h3>
+                  <h3>Resume Preview</h3>
                   <button 
                     className="close-panel-button"
                     onClick={() => {
@@ -555,7 +543,6 @@ const HiringRounds = () => {
               <div className="resume-preview">
                 {loadingHistory ? (
                   <div className="resume-preview-placeholder">
-                    <div className="icon">⏳</div>
                     <p>Loading resume...</p>
                   </div>
                 ) : resumeUrl ? (
@@ -568,7 +555,6 @@ const HiringRounds = () => {
                   />
                 ) : (
                   <div className="resume-preview-placeholder">
-                    <div className="icon">📄</div>
                     <p>No resume available</p>
                   </div>
                 )}
@@ -577,11 +563,10 @@ const HiringRounds = () => {
 
             {/* Right Panel: Interactive Timeline */}
             <div className="timeline-panel">
-              <h3>🎯 Recruitment Timeline</h3>
+              <h3>Recruitment Timeline</h3>
               
               {loadingHistory ? (
                 <div style={{ textAlign: 'center', padding: '40px', color: '#9ca3af' }}>
-                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
                   <p>Loading timeline...</p>
                 </div>
               ) : (
@@ -611,7 +596,7 @@ const HiringRounds = () => {
                         {index < rounds.length - 1 && <div className="timeline-connector"></div>}
                         
                         {/* Round Circle */}
-                        <div 
+                        <div
                           className={`round-circle ${statusClass} ${isDisabled ? 'disabled' : ''}`}
                           onClick={() => !isDisabled && handleRoundClick(round)}
                           title={isDisabled ? (hasRejectedPrevious ? 'Disabled due to previous rejection' : 'Please complete previous rounds first') : `Click to add/edit feedback for ${round.name}`}
@@ -621,13 +606,11 @@ const HiringRounds = () => {
                             cursor: isDisabled ? 'not-allowed' : 'pointer'
                           }}
                         >
-                          {status === 'CLEARED' ? '✅' : 
-                           status === 'REJECTED' ? '❌' : 
-                           status === 'ON_HOLD' ? '⏸️' : 
-                           round.icon}
-                        </div>
-
-                        {/* Round Info */}
+                          {status === 'CLEARED' ? 'C' : 
+                           status === 'REJECTED' ? 'R' : 
+                           status === 'ON_HOLD' ? 'H' : 
+                           'P'}
+                        </div>                        {/* Round Info */}
                         <div className="round-info">
                           <div className="round-name">
                             {round.name}
@@ -641,7 +624,6 @@ const HiringRounds = () => {
                               <div className="round-details">
                                 {roundData.completedAt && (
                                   <div className="round-detail-item">
-                                    <span>📅</span>
                                     <span>{new Date(roundData.completedAt).toLocaleDateString('en-IN', { 
                                       day: 'numeric', 
                                       month: 'short', 
@@ -651,21 +633,19 @@ const HiringRounds = () => {
                                 )}
                                 {roundData.score && (
                                   <div className="round-detail-item">
-                                    <span>📊</span>
-                                    <span><strong>{roundData.score}%</strong></span>
+                                    <span>Score: <strong>{roundData.score}%</strong></span>
                                   </div>
                                 )}
                                 {roundData.interviewer && (
                                   <div className="round-detail-item">
-                                    <span>👤</span>
-                                    <span>{roundData.interviewer}</span>
+                                    <span>Interviewer: {roundData.interviewer}</span>
                                   </div>
                                 )}
                               </div>
 
                               {roundData.feedback && (
                                 <div className="round-feedback">
-                                  <strong>💬 Feedback:</strong>
+                                  <strong>Feedback:</strong>
                                   {roundData.feedback}
                                 </div>
                               )}
@@ -693,7 +673,7 @@ const HiringRounds = () => {
           <div className="feedback-modal-overlay" onClick={() => setShowFeedbackModal(false)}>
             <div className="feedback-modal" onClick={(e) => e.stopPropagation()}>
               <div className="feedback-modal-header">
-                <h3>💬 Feedback for {selectedRoundForFeedback.name}</h3>
+                <h3>Feedback for {selectedRoundForFeedback.name}</h3>
                 <button className="close-button" onClick={() => setShowFeedbackModal(false)}>✕</button>
               </div>
 
@@ -711,7 +691,7 @@ const HiringRounds = () => {
                         onChange={(e) => setFeedbackForm({...feedbackForm, status: e.target.value})}
                       />
                       <label htmlFor="status-cleared" className="status-radio-label">
-                        ✅ Cleared
+                        Cleared
                       </label>
                     </div>
 
@@ -725,7 +705,7 @@ const HiringRounds = () => {
                         onChange={(e) => setFeedbackForm({...feedbackForm, status: e.target.value})}
                       />
                       <label htmlFor="status-pending" className="status-radio-label">
-                        ⏳ Pending
+                        Pending
                       </label>
                     </div>
 
@@ -739,7 +719,7 @@ const HiringRounds = () => {
                         onChange={(e) => setFeedbackForm({...feedbackForm, status: e.target.value})}
                       />
                       <label htmlFor="status-on-hold" className="status-radio-label">
-                        ⏸️ On Hold
+                        On Hold
                       </label>
                     </div>
 
@@ -753,7 +733,7 @@ const HiringRounds = () => {
                         onChange={(e) => setFeedbackForm({...feedbackForm, status: e.target.value})}
                       />
                       <label htmlFor="status-rejected" className="status-radio-label">
-                        ❌ Rejected
+                        Rejected
                       </label>
                     </div>
                   </div>
@@ -847,10 +827,10 @@ const HiringRounds = () => {
                       onChange={(e) => setStatusUpdate({...statusUpdate, status: e.target.value})}
                       required
                     >
-                      <option value="CLEARED">✅ Cleared</option>
-                      <option value="PENDING">⏳ Pending</option>
-                      <option value="REJECTED">❌ Rejected</option>
-                      <option value="ON_HOLD">⏸️ On Hold</option>
+                      <option value="CLEARED">Cleared</option>
+                      <option value="PENDING">Pending</option>
+                      <option value="REJECTED">Rejected</option>
+                      <option value="ON_HOLD">On Hold</option>
                     </select>
                   </div>
 
@@ -910,32 +890,31 @@ const HiringRounds = () => {
               <div className="modal-body">
                 <div className="candidate-summary">
                   <div className="summary-item">
-                    <span className="summary-label">🏫 College</span>
+                    <span className="summary-label">College</span>
                     <span className="summary-value">{selectedCandidate.collegeName}</span>
                   </div>
                   <div className="summary-item">
-                    <span className="summary-label">🎓 Branch</span>
+                    <span className="summary-label">Branch</span>
                     <span className="summary-value">{selectedCandidate.branch}</span>
                   </div>
                   <div className="summary-item">
-                    <span className="summary-label">📊 CGPA</span>
+                    <span className="summary-label">CGPA</span>
                     <span className="summary-value">{selectedCandidate.cgpa}</span>
                   </div>
                   <div className="summary-item">
-                    <span className="summary-label">📞 Phone</span>
+                    <span className="summary-label">Phone</span>
                     <span className="summary-value">{selectedCandidate.phone}</span>
                   </div>
                 </div>
 
                 <div className="history-section">
-                  <h3 className="history-title">📋 Recruitment Journey</h3>
+                  <h3 className="history-title">Recruitment Journey</h3>
                   {loading ? (
                     <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
                       <div>Loading history...</div>
                     </div>
                   ) : hiringHistory.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-                      <div style={{ fontSize: '48px', marginBottom: '16px' }}>📝</div>
                       <div>No recruitment history available yet</div>
                     </div>
                   ) : (
@@ -958,7 +937,7 @@ const HiringRounds = () => {
                             <div className="timeline-details">
                               <div className="detail-grid">
                                 <div className="detail-item">
-                                  <span className="detail-label">📅 Date</span>
+                                  <span className="detail-label">Date</span>
                                   <span className="detail-value">
                                     {history.completedAt 
                                       ? new Date(history.completedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -968,16 +947,16 @@ const HiringRounds = () => {
                                   </span>
                                 </div>
                                 <div className="detail-item">
-                                  <span className="detail-label">👤 Interviewer</span>
+                                  <span className="detail-label">Interviewer</span>
                                   <span className="detail-value">{history.interviewer || 'N/A'}</span>
                                 </div>
                                 <div className="detail-item">
-                                  <span className="detail-label">⏱️ Duration</span>
+                                  <span className="detail-label">Duration</span>
                                   <span className="detail-value">{history.duration || 'N/A'}</span>
                                 </div>
                                 {history.score && (
                                   <div className="detail-item">
-                                    <span className="detail-label">📊 Score</span>
+                                    <span className="detail-label">Score</span>
                                     <span className="detail-value">
                                       <span className="score-badge">{history.score}%</span>
                                     </span>
@@ -986,7 +965,7 @@ const HiringRounds = () => {
                               </div>
                               {history.feedback && (
                                 <div className="feedback-box">
-                                  <strong>💬 Feedback:</strong>
+                                  <strong>Feedback:</strong>
                                   <p>{history.feedback}</p>
                                 </div>
                               )}

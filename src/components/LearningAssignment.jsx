@@ -91,7 +91,7 @@ const LearningAssignment = () => {
             setSaving(true);
             setStatusMessage({ text: '', type: '' });
             await api.assignLearning(selectedIntern.id, selectedCourses, selectedProjects);
-            setStatusMessage({ text: '✅ Courses assigned successfully!', type: 'success' });
+            setStatusMessage({ text: 'Courses assigned successfully!', type: 'success' });
 
             // Refresh intern list to get updated assignments
             const updatedInterns = await api.getActiveInterns(searchTerm);
