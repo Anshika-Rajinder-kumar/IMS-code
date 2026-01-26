@@ -15,6 +15,8 @@ import BulkUpload from './components/BulkUpload';
 import HiringStatus from './components/HiringStatus';
 import LearningProgress from './components/LearningProgress';
 import Settings from './components/Settings';
+import LearningAssignment from './components/LearningAssignment';
+import CourseProjectPool from './components/CourseProjectPool';
 
 function App() {
   const PrivateRoute = ({ children }) => {
@@ -25,10 +27,10 @@ function App() {
   const RoleBasedRoute = ({ component: Component, internComponent: InternComponent }) => {
     const user = localStorage.getItem('user');
     if (!user) return <Navigate to="/login" />;
-    
+
     const userData = JSON.parse(user);
     const isIntern = userData.userType?.toUpperCase() === 'INTERN';
-    
+
     return isIntern && InternComponent ? <InternComponent /> : <Component />;
   };
 
@@ -63,6 +65,22 @@ function App() {
           }
         />
         <Route
+          path="/admin/learning-assignment"
+          element={
+            <PrivateRoute>
+              <LearningAssignment />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/course-project-pool"
+          element={
+            <PrivateRoute>
+              <CourseProjectPool />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path="/interns"
           element={
             <PrivateRoute>
@@ -73,8 +91,8 @@ function App() {
         <Route
           path="/documents"
           element={
-            <RoleBasedRoute 
-              component={Documents} 
+            <RoleBasedRoute
+              component={Documents}
               internComponent={InternDocuments}
             />
           }

@@ -10,6 +10,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "interns")
@@ -47,7 +49,6 @@ public class Intern {
     @Column(nullable = false)
     private String cgpa;
 
-    
     private LocalDate joinDate;
 
     @Column(length = 500)
@@ -66,6 +67,14 @@ public class Intern {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private InternStatus status = InternStatus.DOCUMENT_PENDING;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "intern_courses", joinColumns = @JoinColumn(name = "intern_id"), inverseJoinColumns = @JoinColumn(name = "course_id"))
+    private Set<LearningCourse> assignedCourses = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "intern_projects", joinColumns = @JoinColumn(name = "intern_id"), inverseJoinColumns = @JoinColumn(name = "project_id"))
+    private Set<Project> assignedProjects = new HashSet<>();
 
     @CreatedDate
     @Column(nullable = false, updatable = false)

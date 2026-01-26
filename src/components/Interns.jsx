@@ -13,6 +13,11 @@ const Interns = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [editingIntern, setEditingIntern] = useState(null);
+  const [availableCourses, setAvailableCourses] = useState([]);
+  const [availableProjects, setAvailableProjects] = useState([]);
+  const [selectedCourses, setSelectedCourses] = useState([]);
+  const [selectedProjects, setSelectedProjects] = useState([]);
+  const [savingAssignment, setSavingAssignment] = useState(false);
 
   const [interns, setInterns] = useState([]);
 
@@ -37,7 +42,21 @@ const Interns = () => {
       return;
     }
     fetchInterns();
+    fetchLearningOptions();
   }, [navigate]);
+
+  const fetchLearningOptions = async () => {
+    try {
+      const [courses, projects] = await Promise.all([
+        api.getAllCourses(),
+        api.getAllProjects()
+      ]);
+      setAvailableCourses(courses);
+      setAvailableProjects(projects);
+    } catch (err) {
+      console.error('Error fetching learning options:', err);
+    }
+  };
 
   const fetchInterns = async () => {
     try {
@@ -101,6 +120,8 @@ const Interns = () => {
       emergencyContact: intern.emergencyContact || '',
       status: intern.status
     });
+    setSelectedCourses(intern.assignedCourses ? intern.assignedCourses.map(c => c.id) : []);
+    setSelectedProjects(intern.assignedProjects ? intern.assignedProjects.map(p => p.id) : []);
     setShowModal(true);
   };
 
@@ -137,8 +158,8 @@ const Interns = () => {
 
   const filteredInterns = interns.filter(intern => {
     const matchesSearch = intern.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (intern.collegeName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         intern.email.toLowerCase().includes(searchTerm.toLowerCase());
+      (intern.collegeName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      intern.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === 'all' || intern.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
@@ -146,7 +167,7 @@ const Interns = () => {
   return (
     <div className="dashboard-container">
       <Sidebar />
-      
+
       <main className="main-content">
         <header className="dashboard-header">
           <div>
@@ -264,10 +285,10 @@ const Interns = () => {
                 <div className="intern-photo">
                   <span style={{ fontSize: '48px' }}>{intern.name.toLowerCase().includes('a') ? '👩‍💼' : '👨‍💼'}</span>
                 </div>
-                
+
                 <h3 className="intern-name">{intern.name}</h3>
                 <p className="intern-college">{intern.collegeName || 'N/A'}</p>
-                
+
                 <div className="intern-badge-container">
                   <span className={`badge ${getStatusBadge(intern.status)}`}>
                     {formatStatus(intern.status)}
@@ -371,7 +392,7 @@ const Interns = () => {
                   setEditingIntern(null);
                 }}>✕</button>
               </div>
-              
+
               <form onSubmit={handleSubmit}>
                 <div className="form-row">
                   <div className="form-group">
@@ -506,10 +527,98 @@ const Interns = () => {
                   ></textarea>
                 </div>
 
+                {formData.status === 'ACTIVE' && (
+                  <div className="learning-assignment-section" style={{ marginTop: '24px', padding: '16px', backgroundColor: '#f9fafb', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+                    <h3 style={{ fontSize: '18px', marginBottom: '16px', color: '#111827', fontWeight: 'bold' }}>📚 Learning & Project Assignment</h3>
+
+                    <div style={{ display: 'flex', gap: '20px' }}>
+                      <div style={{ flex: 1 }}>
+                        <label className="form-label" style={{ fontWeight: '600' }}>Assign Courses</label>
+                        <div style={{ border: '1px solid #d1d5db', borderRadius: '8px', maxHeight: '150px', overflowY: 'auto', backgroundColor: '#fff', padding: '8px' }}>
+                          {availableCourses.map(course => (
+                            <label key={course.id} style={{ display: 'flex', alignItems: 'center', padding: '6px 8px', cursor: 'pointer', borderRadius: '4px' }}>
+                              <input
+                                type="checkbox"
+                                checked={selectedCourses.includes(course.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedCourses([...selectedCourses, course.id]);
+                                  } else {
+                                    setSelectedCourses(selectedCourses.filter(id => id !== course.id));
+                                  }
+                                }}
+                                style={{ marginRight: '10px' }}
+                              />
+                              <div style={{ fontSize: '14px' }}>
+                                <div style={{ fontWeight: '500' }}>{course.title}</div>
+                                <div style={{ fontSize: '12px', color: '#666' }}>{course.duration} • {course.difficulty}</div>
+                              </div>
+                            </label>
+                          ))}
+                          {availableCourses.length === 0 && <p style={{ fontSize: '14px', color: '#666', padding: '8px' }}>No courses available.</p>}
+                        </div>
+                      </div>
+
+                      <div style={{ flex: 1 }}>
+                        <label className="form-label" style={{ fontWeight: '600' }}>Assign Projects</label>
+                        <div style={{ border: '1px solid #d1d5db', borderRadius: '8px', maxHeight: '150px', overflowY: 'auto', backgroundColor: '#fff', padding: '8px' }}>
+                          {availableProjects.map(project => (
+                            <label key={project.id} style={{ display: 'flex', alignItems: 'center', padding: '6px 8px', cursor: 'pointer', borderRadius: '4px' }}>
+                              <input
+                                type="checkbox"
+                                checked={selectedProjects.includes(project.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedProjects([...selectedProjects, project.id]);
+                                  } else {
+                                    setSelectedProjects(selectedProjects.filter(id => id !== project.id));
+                                  }
+                                }}
+                                style={{ marginRight: '10px' }}
+                              />
+                              <div style={{ fontSize: '14px' }}>
+                                <div style={{ fontWeight: '500' }}>{project.title}</div>
+                                <div style={{ fontSize: '12px', color: '#666' }}>{project.duration} • {project.difficulty}</div>
+                              </div>
+                            </label>
+                          ))}
+                          {availableProjects.length === 0 && <p style={{ fontSize: '14px', color: '#666', padding: '8px' }}>No projects available.</p>}
+                        </div>
+                      </div>
+                    </div>
+
+                    {editingIntern && (
+                      <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-sm"
+                          disabled={savingAssignment}
+                          onClick={async () => {
+                            try {
+                              setSavingAssignment(true);
+                              await api.assignLearning(editingIntern.id, selectedCourses, selectedProjects);
+                              alert('Learning assignments updated successfully!');
+                              await fetchInterns();
+                            } catch (err) {
+                              alert('Failed to update assignments: ' + err.message);
+                            } finally {
+                              setSavingAssignment(false);
+                            }
+                          }}
+                        >
+                          {savingAssignment ? 'Saving...' : '💾 Save Assignments'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="modal-actions">
                   <button type="button" className="btn btn-outline" onClick={() => {
                     setShowModal(false);
                     setEditingIntern(null);
+                    setSelectedCourses([]);
+                    setSelectedProjects([]);
                   }}>
                     Cancel
                   </button>

@@ -28,11 +28,13 @@ const Sidebar = () => {
   // Role-based navigation items
   const getNavigationItems = () => {
     const userType = user.userType?.toUpperCase();
-    
+
     if (userType === 'ADMIN' || userType === 'HR') {
       return [
         { path: '/dashboard', icon: '📊', label: 'Dashboard' },
         { path: '/colleges', icon: '🏫', label: 'Colleges' },
+        { path: '/admin/course-project-pool', icon: '🏊‍♂️', label: 'Courses / Projects' },
+        { path: '/admin/learning-assignment', icon: '📝', label: 'Assign Courses' },
         { path: '/hiring-rounds', icon: '🎯', label: 'Hiring Rounds' },
         { path: '/interns', icon: '👥', label: 'Interns' },
         { path: '/documents', icon: '📁', label: 'Documents' },
@@ -55,7 +57,7 @@ const Sidebar = () => {
         { path: '/settings', icon: '⚙️', label: 'Settings' }
       ];
     }
-    
+
     return [];
   };
 
@@ -70,10 +72,10 @@ const Sidebar = () => {
 
       <nav className="sidebar-nav">
         {getNavigationItems().map((item) => (
-          <a 
+          <a
             key={item.path}
-            href="#" 
-            onClick={(e) => { e.preventDefault(); navigate(item.path); }} 
+            href="#"
+            onClick={(e) => { e.preventDefault(); navigate(item.path); }}
             className={`nav-item ${isActive(item.path)}`}
           >
             <span className="nav-icon">{item.icon}</span>

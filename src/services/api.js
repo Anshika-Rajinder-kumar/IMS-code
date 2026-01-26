@@ -13,12 +13,12 @@ class ApiService {
     const headers = {
       'Content-Type': 'application/json',
     };
-    
+
     const token = this.getAuthToken();
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
-    
+
     return headers;
   }
 
@@ -31,7 +31,7 @@ class ApiService {
         window.location.href = '/login';
         throw new Error('Session expired. Please login again.');
       }
-      
+
       let errorMessage = 'Something went wrong';
       try {
         const errorData = await response.json();
@@ -41,15 +41,15 @@ class ApiService {
       }
       throw new Error(errorMessage);
     }
-    
+
     const jsonData = await response.json();
-    
+
     // Backend returns ApiResponse wrapper: {success, message, data}
     // Return the data property if it exists, otherwise return the whole response
     if (jsonData.success !== undefined && jsonData.data !== undefined) {
       return jsonData.data;
     }
-    
+
     return jsonData;
   }
 
@@ -107,7 +107,7 @@ class ApiService {
   async uploadFile(endpoint, formData) {
     const token = this.getAuthToken();
     const headers = {};
-    
+
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
@@ -283,7 +283,7 @@ class ApiService {
     formData.append('description', description);
     formData.append('type', type);
     formData.append('file', file);
-    
+
     return this.uploadFile('/documents/upload', formData);
   }
 
@@ -453,6 +453,43 @@ class ApiService {
 
   async getLatestOfferByInternId(internId) {
     return this.get(`/offers/intern/${internId}/latest`);
+  }
+
+  // Learning APIs
+  async getMyLearning() {
+    return this.get('/intern/learning');
+  }
+
+  async getActiveInterns(term = '') {
+    return this.get(`/admin/interns/active?term=${encodeURIComponent(term)}`);
+  }
+
+  async assignLearning(internId, courseIds, projectIds) {
+    return this.post('/admin/assign-learning', { internId, courseIds, projectIds });
+  }
+
+  async getCoursePool() {
+    return this.get('/admin/course-pool');
+  }
+
+  async createCourse(course) {
+    return this.post('/admin/course-pool', course);
+  }
+
+  async deleteCourse(id) {
+    return this.delete(`/admin/course-pool/${id}`);
+  }
+
+  async getProjectPool() {
+    return this.get('/admin/project-pool');
+  }
+
+  async createProject(project) {
+    return this.post('/admin/project-pool', project);
+  }
+
+  async deleteProject(id) {
+    return this.delete(`/admin/project-pool/${id}`);
   }
 }
 
