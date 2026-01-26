@@ -46,7 +46,7 @@ public class EmailService {
             message.setTo(toEmail);
             message.setSubject("Welcome to " + appName + " - College Login Credentials");
             message.setText(buildCollegeEmailBody(collegeName, email, password));
-            
+
             mailSender.send(message);
         } catch (Exception e) {
             // Fallback to console logging if email fails
@@ -81,7 +81,7 @@ public class EmailService {
             message.setTo(toEmail);
             message.setSubject("Welcome to " + appName + " - Intern Login Credentials");
             message.setText(buildInternEmailBody(internName, email, password));
-            
+
             mailSender.send(message);
         } catch (Exception e) {
             // Fallback to console logging if email fails
@@ -96,7 +96,7 @@ public class EmailService {
         }
     }
 
-    public void sendOfferLetter(Intern intern, Offer offer) {
+    public void sendOfferLetter(Intern intern, Offer offer, byte[] pdfBytes) {
         if (mailSender == null) {
             // Log offer details if email is not configured
             System.out.println("==============================================");
@@ -115,303 +115,209 @@ public class EmailService {
 
         try {
             MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8"); // Changed to false - no attachments
-            
+            // Enable multipart support for attachment
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
             helper.setFrom(fromEmail);
             helper.setTo(intern.getEmail());
             helper.setSubject("Congratulations! Internship Offer Letter from " + appName);
             helper.setText(buildOfferEmailBody(intern, offer), true);
-            
-            // Removed PDF attachment - user can download from portal
-            
+
+            // Attach PDF
+            if (pdfBytes != null && pdfBytes.length > 0) {
+                String filename = "Internship_Offer_" + intern.getName().replace(" ", "_") + ".pdf";
+                helper.addAttachment(filename, new ByteArrayResource(pdfBytes));
+                System.out.println("📎 Attached PDF to offer email: " + filename);
+            }
+
             mailSender.send(message);
-            System.out.println("✅ Offer letter email sent successfully to: " + intern.getEmail());
+            System.out.println("✅ Offer letter email sent successfully with attachment to: " + intern.getEmail());
         } catch (MessagingException e) {
             // Log the actual error
             System.err.println("❌ Failed to send offer email to: " + intern.getEmail());
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace();
-            System.out.println("==============================================");
-            System.out.println("Offer Letter for: " + intern.getName());
-            System.out.println("Position: " + offer.getPosition());
-            System.out.println("Stipend: Rs. " + offer.getStipend());
-            System.out.println("==============================================");
-            // Re-throw so caller knows it failed
             throw new RuntimeException("Failed to send email: " + e.getMessage(), e);
         }
     }
 
     private String buildOfferEmailBody(Intern intern, Offer offer) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMMM yyyy");
-        String startDate = offer.getStartDate() != null ? 
-            offer.getStartDate().format(formatter) : "To be decided";
-        
-        return String.format("""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <style>
-                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                    .header { background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%); 
-                             color: white; padding: 30px; text-align: center; }
-                    .content { padding: 30px; background: #f9fafb; }
-                    .offer-box { background: white; border-left: 4px solid #667eea; 
-                                padding: 20px; margin: 20px 0; border-radius: 8px; }
-                    .detail { margin: 10px 0; }
-                    .label { font-weight: bold; color: #667eea; }
-                    .button { display: inline-block; padding: 12px 30px; 
-                             background: #667eea; color: white; text-decoration: none; 
-                             border-radius: 6px; margin: 20px 0; }
-                    .footer { text-align: center; color: #666; padding: 20px; 
-                             border-top: 1px solid #ddd; margin-top: 30px; }
-                </style>
-            </head>
-            <body>
-                <div class="header">
-                    <h1>🎉 Congratulations!</h1>
-                    <h2>Internship Offer Letter</h2>
-                </div>
-                <div class="content">
-                    <p>Dear <strong>%s</strong>,</p>
-                    
-                    <p>We are pleased to extend an offer for the <strong>%s</strong> position at <strong>%s</strong>!</p>
-                    
-                    <div class="offer-box">
-                        <h3 style="color: #667eea; margin-top: 0;">Offer Details</h3>
-                        <div class="detail">
-                            <span class="label">Position:</span> %s
-                        </div>
-                        <div class="detail">
-                            <span class="label">Department:</span> %s
-                        </div>
-                        <div class="detail">
-                            <span class="label">Stipend:</span> Rs. %d per month
-                        </div>
-                        <div class="detail">
-                            <span class="label">Duration:</span> %s
-                        </div>
-                        <div class="detail">
-                            <span class="label">Start Date:</span> %s
-                        </div>
-                        <div class="detail">
-                            <span class="label">Location:</span> %s (%s)
-                        </div>
-                        <div class="detail">
-                            <span class="label">Reporting Manager:</span> %s
-                        </div>
-                    </div>
-                    
-                    <p><strong>📄 Offer Letter:</strong> You can download your official offer letter from the portal after logging in.</p>
-                    
-                    <p>To accept this offer, please:</p>
-                    <ol>
-                        <li>Log in to the portal using the link below</li>
-                        <li>Navigate to "My Offer" section</li>
-                        <li>Download and review the offer letter</li>
-                        <li>Upload the signed offer letter</li>
-                        <li>Click on "Accept Offer" button</li>
-                    </ol>
-                    
-                    <div style="text-align: center;">
-                        <a href="http://localhost:3000" class="button">Login to Portal</a>
-                    </div>
-                    
-                    <p>We look forward to having you on our team!</p>
-                    
-                    <p><strong>Important:</strong> This offer is valid for 7 days from the date of this email.</p>
-                </div>
-                <div class="footer">
-                    <p>Best regards,<br>
-                    <strong>%s Team</strong></p>
-                    <p style="font-size: 12px; color: #999;">
-                        This is an automated email. Please do not reply to this message.<br>
-                        If you have any questions, please contact hr@wissen.com
-                    </p>
-                </div>
-            </body>
-            </html>
-            """, 
-            intern.getName(), 
-            offer.getPosition(), 
-            appName,
-            offer.getPosition(),
-            offer.getDepartment(),
-            offer.getStipend(),
-            offer.getDuration(),
-            startDate,
-            offer.getLocation(),
-            offer.getWorkMode(),
-            offer.getReportingManager(),
-            appName);
-    }
+        String startDate = offer.getStartDate() != null ? offer.getStartDate().format(formatter) : "To be decided";
 
-    private byte[] generateOfferLetterPDF(Intern intern, Offer offer) {
-        // Simple text-based PDF generation
-        // In production, use libraries like Apache PDFBox or iText
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMMM yyyy");
-        String startDate = offer.getStartDate() != null ? 
-            offer.getStartDate().format(formatter) : "To be decided";
-        String offerDate = java.time.LocalDate.now().format(formatter);
-        
-        String pdfContent = String.format("""
-            ============================================================
-            %s
-            INTERNSHIP OFFER LETTER
-            ============================================================
-            
-            Date: %s
-            
-            To,
-            %s
-            %s
-            %s
-            
-            Dear %s,
-            
-            Subject: Offer for Internship - %s
-            
-            We are pleased to offer you an internship position with the following details:
-            
-            POSITION DETAILS:
-            ----------------
-            Position Title:      %s
-            Department:          %s
-            Reporting Manager:   %s
-            
-            COMPENSATION:
-            ------------
-            Stipend:            Rs. %s per month
-            Duration:           %d months
-            
-            WORK DETAILS:
-            ------------
-            Start Date:         %s
-            Location:           %s
-            Work Mode:          %s
-            
-            TERMS AND CONDITIONS:
-            --------------------
-            1. This internship is for a fixed duration as mentioned above.
-            2. The stipend will be paid monthly.
-            3. You are required to maintain confidentiality of company information.
-            4. Regular attendance and punctuality are expected.
-            5. Performance will be evaluated periodically.
-            
-            ACCEPTANCE:
-            ----------
-            Please confirm your acceptance by logging into the portal at:
-            http://localhost:3000
-            
-            This offer is valid for 7 days from the date of this letter.
-            
-            We look forward to having you join our team!
-            
-            Best regards,
-            
-            %s
-            HR Department
-            %s
-            
-            ============================================================
-            Generated by %s - Intern Management System
-            ============================================================
-            """,
-            appName,
-            offerDate,
-            intern.getName(),
-            intern.getEmail(),
-            intern.getCollegeName() != null ? intern.getCollegeName() : "",
-            intern.getName(),
-            offer.getPosition(),
-            offer.getPosition(),
-            offer.getDepartment(),
-            offer.getReportingManager(),
-            offer.getStipend(),
-            offer.getDuration(),
-            startDate,
-            offer.getLocation(),
-            offer.getWorkMode(),
-            offer.getGeneratedBy(),
-            appName,
-            appName
-        );
-        
-        return pdfContent.getBytes();
+        return String.format(
+                """
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <style>
+                                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                                .header { background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%);
+                                         color: white; padding: 30px; text-align: center; }
+                                .content { padding: 30px; background: #f9fafb; }
+                                .offer-box { background: white; border-left: 4px solid #667eea;
+                                            padding: 20px; margin: 20px 0; border-radius: 8px; }
+                                .detail { margin: 10px 0; }
+                                .label { font-weight: bold; color: #667eea; }
+                                .button { display: inline-block; padding: 12px 30px;
+                                         background: #667eea; color: white; text-decoration: none;
+                                         border-radius: 6px; margin: 20px 0; }
+                                .footer { text-align: center; color: #666; padding: 20px;
+                                         border-top: 1px solid #ddd; margin-top: 30px; }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="header">
+                                <h1>🎉 Congratulations!</h1>
+                                <h2>Internship Offer Letter</h2>
+                            </div>
+                            <div class="content">
+                                <p>Dear <strong>%s</strong>,</p>
+
+                                <p>We are pleased to extend an offer for the <strong>%s</strong> position at <strong>%s</strong>!</p>
+
+                                <div class="offer-box">
+                                    <h3 style="color: #667eea; margin-top: 0;">Offer Details</h3>
+                                    <div class="detail">
+                                        <span class="label">Position:</span> %s
+                                    </div>
+                                    <div class="detail">
+                                        <span class="label">Department:</span> %s
+                                    </div>
+                                    <div class="detail">
+                                        <span class="label">Stipend:</span> Rs. %d per month
+                                    </div>
+                                    <div class="detail">
+                                        <span class="label">Duration:</span> %s
+                                    </div>
+                                    <div class="detail">
+                                        <span class="label">Start Date:</span> %s
+                                    </div>
+                                    <div class="detail">
+                                        <span class="label">Location:</span> %s (%s)
+                                    </div>
+                                    <div class="detail">
+                                        <span class="label">Reporting Manager:</span> %s
+                                    </div>
+                                </div>
+
+                                <p><strong>📄 Offer Letter:</strong> You can download your official offer letter from the portal after logging in.</p>
+
+                                <p>To accept this offer, please:</p>
+                                <ol>
+                                    <li>Log in to the portal using the link below</li>
+                                    <li>Navigate to "My Offer" section</li>
+                                    <li>Download and review the offer letter</li>
+                                    <li>Upload the signed offer letter</li>
+                                    <li>Click on "Accept Offer" button</li>
+                                </ol>
+
+                                <div style="text-align: center;">
+                                    <a href="http://localhost:3000" class="button">Login to Portal</a>
+                                </div>
+
+                                <p>We look forward to having you on our team!</p>
+
+                                <p><strong>Important:</strong> This offer is valid for 7 days from the date of this email.</p>
+                            </div>
+                            <div class="footer">
+                                <p>Best regards,<br>
+                                <strong>%s Team</strong></p>
+                                <p style="font-size: 12px; color: #999;">
+                                    This is an automated email. Please do not reply to this message.<br>
+                                    If you have any questions, please contact hr@wissen.com
+                                </p>
+                            </div>
+                        </body>
+                        </html>
+                        """,
+                intern.getName(),
+                offer.getPosition(),
+                appName,
+                offer.getPosition(),
+                offer.getDepartment(),
+                offer.getStipend(),
+                offer.getDuration(),
+                startDate,
+                offer.getLocation(),
+                offer.getWorkMode(),
+                offer.getReportingManager(),
+                appName);
     }
 
     private String buildCollegeEmailBody(String collegeName, String email, String password) {
         return String.format("""
-            Dear %s,
-            
-            Welcome to %s!
-            
-            Your college has been successfully registered in our Intern Management System.
-            You can now log in to the portal to view and track your students' hiring progress.
-            
-            Login Credentials:
-            ------------------
-            Email: %s
-            Password: %s
-            Portal URL: http://localhost:3000
-            
-            Instructions:
-            1. Visit the portal URL
-            2. Select "College" as your user type
-            3. Enter your credentials
-            4. For security reasons, please change your password after first login
-            
-            Features available to you:
-            - View students' hiring status
-            - Track interview rounds and scores
-            - Monitor offer generation and acceptance
-            - View comprehensive reports
-            
-            If you have any questions or face any issues, please contact our support team.
-            
-            Best regards,
-            %s Team
-            
-            ---
-            This is an automated email. Please do not reply to this message.
-            """, 
-            collegeName, appName, email, password, appName);
+                Dear %s,
+
+                Welcome to %s!
+
+                Your college has been successfully registered in our Intern Management System.
+                You can now log in to the portal to view and track your students' hiring progress.
+
+                Login Credentials:
+                ------------------
+                Email: %s
+                Password: %s
+                Portal URL: http://localhost:3000
+
+                Instructions:
+                1. Visit the portal URL
+                2. Select "College" as your user type
+                3. Enter your credentials
+                4. For security reasons, please change your password after first login
+
+                Features available to you:
+                - View students' hiring status
+                - Track interview rounds and scores
+                - Monitor offer generation and acceptance
+                - View comprehensive reports
+
+                If you have any questions or face any issues, please contact our support team.
+
+                Best regards,
+                %s Team
+
+                ---
+                This is an automated email. Please do not reply to this message.
+                """,
+                collegeName, appName, email, password, appName);
     }
 
     private String buildInternEmailBody(String internName, String email, String password) {
         return String.format("""
-            Dear %s,
-            
-            Welcome to %s!
-            
-            You have been registered as an intern in our Intern Management System.
-            You can now log in to the portal to manage your documents and view offers.
-            
-            Login Credentials:
-            ------------------
-            Email: %s
-            Password: %s
-            Portal URL: http://localhost:3000
-            
-            Instructions:
-            1. Visit the portal URL
-            2. Select "Intern" as your user type
-            3. Enter your credentials
-            4. For security reasons, please change your password after first login
-            
-            Features available to you:
-            - Upload and manage required documents
-            - View your hiring status and interview rounds
-            - Access and respond to offer letters
-            - Track your progress through the hiring process
-            
-            If you have any questions or face any issues, please contact our support team.
-            
-            Best regards,
-            %s Team
-            
-            ---
-            This is an automated email. Please do not reply to this message.
-            """, 
-            internName, appName, email, password, appName);
+                Dear %s,
+
+                Welcome to %s!
+
+                You have been registered as an intern in our Intern Management System.
+                You can now log in to the portal to manage your documents and view offers.
+
+                Login Credentials:
+                ------------------
+                Email: %s
+                Password: %s
+                Portal URL: http://localhost:3000
+
+                Instructions:
+                1. Visit the portal URL
+                2. Select "Intern" as your user type
+                3. Enter your credentials
+                4. For security reasons, please change your password after first login
+
+                Features available to you:
+                - Upload and manage required documents
+                - View your hiring status and interview rounds
+                - Access and respond to offer letters
+                - Track your progress through the hiring process
+
+                If you have any questions or face any issues, please contact our support team.
+
+                Best regards,
+                %s Team
+
+                ---
+                This is an automated email. Please do not reply to this message.
+                """,
+                internName, appName, email, password, appName);
     }
 }

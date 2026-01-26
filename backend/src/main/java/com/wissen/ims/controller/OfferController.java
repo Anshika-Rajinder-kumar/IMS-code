@@ -137,17 +137,17 @@ public class OfferController {
         try {
             Offer offer = offerService.getOfferById(id);
             byte[] pdfBytes = offerService.downloadOfferLetter(id);
-            
-            String filename = "Offer_Letter_" + offer.getIntern().getName().replace(" ", "_") + ".pdf";
-            
+
+            String filename = "Internship_Offer_" + offer.getIntern().getName().replace(" ", "_") + ".pdf";
             ByteArrayResource resource = new ByteArrayResource(pdfBytes);
-            
+
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_PDF)
-                    .header(HttpHeaders.CONTENT_DISPOSITION, 
-                            "attachment; filename=\"" + filename + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(pdfBytes.length))
                     .body(resource);
         } catch (Exception e) {
+            System.err.println("❌ Download error: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -157,18 +157,31 @@ public class OfferController {
         try {
             Offer offer = offerService.getOfferById(id);
             byte[] pdfBytes = offerService.downloadOfferLetter(id);
-            
+
             String filename = "Offer_Letter_" + offer.getIntern().getName().replace(" ", "_") + ".pdf";
-            
             ByteArrayResource resource = new ByteArrayResource(pdfBytes);
-            
+
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_PDF)
-                    .header(HttpHeaders.CONTENT_DISPOSITION, 
-                            "inline; filename=\"" + filename + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                    .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(pdfBytes.length))
                     .body(resource);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/{id}/preview")
+    public ResponseEntity<String> previewOfferLetter(@PathVariable Long id) {
+        try {
+            Offer offer = offerService.getOfferById(id);
+            String htmlContent = offerService.renderOfferLetterHTML(offer.getIntern(), offer);
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(htmlContent);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error generating preview: " + e.getMessage());
         }
     }
 
