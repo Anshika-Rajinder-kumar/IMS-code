@@ -134,6 +134,8 @@ const HiringRounds = () => {
     // Check if any previous round was rejected
     const currentRoundIndex = rounds.findIndex(r => r.name === round.name);
     const previousRounds = rounds.slice(0, currentRoundIndex);
+    
+    // Check if any previous round was rejected
     const hasRejectedPrevious = previousRounds.some(r => {
       const roundData = hiringHistory.find(h => h.roundName === r.name);
       return roundData?.status === 'REJECTED';
@@ -141,6 +143,17 @@ const HiringRounds = () => {
 
     if (hasRejectedPrevious) {
       setToast({ message: 'Cannot update this round. Previous round was rejected.', type: 'warning' });
+      return;
+    }
+
+    // Check if all previous rounds have feedback filled
+    const hasPreviousUnfilled = previousRounds.some(r => {
+      const roundData = hiringHistory.find(h => h.roundName === r.name);
+      return !roundData || !roundData.feedback; // No data or no feedback means unfilled
+    });
+
+    if (hasPreviousUnfilled) {
+      setToast({ message: 'Please complete previous rounds before updating this round.', type: 'warning' });
       return;
     }
 
@@ -578,12 +591,19 @@ const HiringRounds = () => {
                     const roundData = getRoundData(round.name);
                     const statusClass = status.toLowerCase().replace(/_/g, '_');
                     
-                    // Check if any previous round was rejected
+                    // Check if any previous round was rejected OR unfilled
                     const previousRounds = rounds.slice(0, index);
-                    const isDisabled = previousRounds.some(r => {
+                    const hasRejectedPrevious = previousRounds.some(r => {
                       const rData = hiringHistory.find(h => h.roundName === r.name);
                       return rData?.status === 'REJECTED';
                     });
+                    
+                    const hasPreviousUnfilled = previousRounds.some(r => {
+                      const rData = hiringHistory.find(h => h.roundName === r.name);
+                      return !rData || !rData.feedback; // No data or no feedback means unfilled
+                    });
+                    
+                    const isDisabled = hasRejectedPrevious || hasPreviousUnfilled;
 
                     return (
                       <div key={round.id} className="timeline-round-item">
@@ -594,7 +614,7 @@ const HiringRounds = () => {
                         <div 
                           className={`round-circle ${statusClass} ${isDisabled ? 'disabled' : ''}`}
                           onClick={() => !isDisabled && handleRoundClick(round)}
-                          title={isDisabled ? 'Disabled due to previous rejection' : `Click to add/edit feedback for ${round.name}`}
+                          title={isDisabled ? (hasRejectedPrevious ? 'Disabled due to previous rejection' : 'Please complete previous rounds first') : `Click to add/edit feedback for ${round.name}`}
                           style={{ 
                             backgroundColor: status === 'PENDING' ? round.color + '20' : undefined,
                             opacity: isDisabled ? 0.5 : 1,
