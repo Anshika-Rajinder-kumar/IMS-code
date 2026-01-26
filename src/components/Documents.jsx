@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import api from '../services/api';
+import Toast from './Toast';
 import './Documents.css';
 
 const Documents = () => {
@@ -9,6 +10,7 @@ const Documents = () => {
   const [error, setError] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [expandedIntern, setExpandedIntern] = useState(null);
+  const [toast, setToast] = useState(null);
   
   const [internsWithDocs, setInternsWithDocs] = useState([]);
 
@@ -57,11 +59,11 @@ const Documents = () => {
   const handleVerifyDocument = async (docId, internId) => {
     try {
       await api.put(`/documents/${docId}/verify`);
-      alert('Document verified successfully!');
+      setToast({ message: 'Document verified successfully!', type: 'success' });
       await fetchInternsWithDocuments();
     } catch (err) {
       console.error('Error verifying document:', err);
-      alert('Failed to verify document');
+      setToast({ message: 'Failed to verify document', type: 'error' });
     }
   };
 
@@ -70,11 +72,11 @@ const Documents = () => {
     if (reason) {
       try {
         await api.put(`/documents/${docId}/reject`, { reason });
-        alert('Document rejected');
+        setToast({ message: 'Document rejected', type: 'info' });
         await fetchInternsWithDocuments();
       } catch (err) {
         console.error('Error rejecting document:', err);
-        alert('Failed to reject document');
+        setToast({ message: 'Failed to reject document', type: 'error' });
       }
     }
   };
@@ -97,7 +99,7 @@ const Documents = () => {
       window.open(blobUrl, '_blank');
     } catch (err) {
       console.error('Error viewing document:', err);
-      alert('Failed to view document');
+      setToast({ message: 'Failed to view document', type: 'error' });
     }
   };
 
@@ -153,7 +155,7 @@ const Documents = () => {
       console.log('Download initiated for:', filename);
     } catch (err) {
       console.error('Error downloading document:', err);
-      alert('Failed to download document');
+      setToast({ message: 'Failed to download document', type: 'error' });
     }
   };
 
@@ -164,8 +166,8 @@ const Documents = () => {
   const handleVerifyInternStatus = async (internId) => {
     const intern = internsWithDocs.find(i => i.id === internId);
     
-    if (intern.status !== 'DOCUMENT_VERIFICATION') {
-      alert('Intern status is not DOCUMENT_VERIFICATION');
+    if (expandedIntern.status !== 'DOCUMENT_VERIFICATION') {
+      setToast({ message: 'Intern status is not DOCUMENT_VERIFICATION', type: 'warning' });
       return;
     }
 
@@ -179,11 +181,11 @@ const Documents = () => {
           status: 'DOCUMENT_VERIFIED'
         });
         
-        alert('Intern status updated to DOCUMENT_VERIFIED!');
+        setToast({ message: 'Intern status updated to DOCUMENT_VERIFIED!', type: 'success' });
         await fetchInternsWithDocuments();
       } catch (err) {
         console.error('Error updating intern status:', err);
-        alert('Failed to update intern status: ' + err.message);
+        setToast({ message: 'Failed to update intern status: ' + err.message, type: 'error' });
       }
     }
   };
@@ -193,7 +195,7 @@ const Documents = () => {
     const pendingDocs = intern.documents.filter(d => d.status === 'PENDING');
     
     if (pendingDocs.length === 0) {
-      alert('No pending documents to verify');
+      setToast({ message: 'No pending documents to verify', type: 'info' });
       return;
     }
 
@@ -204,11 +206,11 @@ const Documents = () => {
           pendingDocs.map(doc => api.put(`/documents/${doc.id}/verify`))
         );
         
-        alert('All documents verified!');
+        setToast({ message: 'All documents verified!', type: 'success' });
         await fetchInternsWithDocuments();
       } catch (err) {
         console.error('Error verifying documents:', err);
-        alert('Failed to verify all documents');
+        setToast({ message: 'Failed to verify all documents', type: 'error' });
       }
     }
   };
@@ -292,6 +294,14 @@ const Documents = () => {
   return (
     <div className="dashboard-container">
       <Sidebar />
+      
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
       
       <main className="main-content">
         <header className="dashboard-header">

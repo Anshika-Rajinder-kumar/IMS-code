@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import api from '../services/api';
+import Toast from './Toast';
 import './Offers.css';
 
 const InternOffer = () => {
@@ -14,6 +15,7 @@ const InternOffer = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [signedOfferFile, setSignedOfferFile] = useState(null);
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -90,10 +92,10 @@ const InternOffer = () => {
       await fetchOffer(user.internId);
       await fetchInternData(user.internId);
       setShowUploadModal(false);
-      alert('🎉 Congratulations! You have accepted the offer. HR will contact you soon with next steps.');
+      setToast({ message: '🎉 Congratulations! You have accepted the offer. HR will contact you soon with next steps.', type: 'success' });
     } catch (error) {
       console.error('Error accepting offer:', error);
-      alert('Failed to accept offer: ' + error.message);
+      setToast({ message: 'Failed to accept offer: ' + error.message, type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -105,10 +107,10 @@ const InternOffer = () => {
       try {
         await api.rejectOffer(offerData.id);
         await fetchOffer(user.internId);
-        alert('Offer declined. Thank you for your time.');
+        setToast({ message: 'Offer declined. Thank you for your time.', type: 'info' });
       } catch (error) {
         console.error('Error declining offer:', error);
-        alert('Failed to decline offer: ' + error.message);
+        setToast({ message: 'Failed to decline offer: ' + error.message, type: 'error' });
       }
     }
   };
@@ -158,6 +160,14 @@ const InternOffer = () => {
   return (
     <div className="dashboard-container">
       <Sidebar />
+      
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
       
       <main className="main-content">
         <header className="dashboard-header">

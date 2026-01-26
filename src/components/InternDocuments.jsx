@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import api from '../services/api';
+import Toast from './Toast';
 import './Documents.css';
 
 const InternDocuments = () => {
@@ -10,6 +11,7 @@ const InternDocuments = () => {
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadFile, setUploadFile] = useState(null);
+  const [toast, setToast] = useState(null);
 
   // Required document templates
   const documentTemplates = [
@@ -142,10 +144,10 @@ const InternDocuments = () => {
       
       setShowUploadModal(false);
       setUploadFile(null);
-      alert('Document uploaded successfully! It will be verified by HR.');
+      setToast({ message: 'Document uploaded successfully! It will be verified by HR.', type: 'success' });
     } catch (error) {
       console.error('Error uploading document:', error);
-      alert('Failed to upload document: ' + error.message);
+      setToast({ message: 'Failed to upload document: ' + error.message, type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -302,6 +304,14 @@ const InternDocuments = () => {
   return (
     <div className="dashboard-container">
       <Sidebar />
+      
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
       
       <main className="main-content">
         <header className="dashboard-header">

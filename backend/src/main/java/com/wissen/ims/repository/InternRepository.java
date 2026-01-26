@@ -19,6 +19,8 @@ public interface InternRepository extends JpaRepository<Intern, Long> {
     List<Intern> findByNameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrCollegeNameContainingIgnoreCase(
             String name, String email, String collegeName);
 
+    Optional<Intern> findByEmail(String email);
+
     Boolean existsByEmail(String email);
 
     @org.springframework.data.jpa.repository.Query("SELECT COUNT(i) FROM Intern i JOIN i.assignedCourses c WHERE c.id = :courseId")

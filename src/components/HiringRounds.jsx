@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import api from '../services/api';
+import Toast from './Toast';
 import './HiringRounds.css';
 
 const HiringRounds = () => {
@@ -12,6 +13,7 @@ const HiringRounds = () => {
   const [loading, setLoading] = useState(false);
   const [candidates, setCandidates] = useState([]);
   const [hiringHistory, setHiringHistory] = useState([]);
+  const [toast, setToast] = useState(null);
 
   const [rounds] = useState([
     { id: 1, name: 'Aptitude Test', order: 1, icon: '📝' },
@@ -53,7 +55,7 @@ const HiringRounds = () => {
       setCandidates(combined);
     } catch (error) {
       console.error('Error fetching data:', error);
-      alert('Failed to load candidates: ' + error.message);
+      setToast({ message: 'Failed to load candidates: ' + error.message, type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -67,7 +69,7 @@ const HiringRounds = () => {
       setHiringHistory(data);
     } catch (error) {
       console.error('Error fetching hiring history:', error);
-      alert('Failed to load hiring history: ' + error.message);
+      setToast({ message: 'Failed to load hiring history: ' + error.message, type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -118,14 +120,8 @@ const HiringRounds = () => {
       if (isCandidate) {
         // If marking as "Selected" with status "CLEARED", convert to intern
         if (statusUpdate.round === 'Selected' && statusUpdate.status === 'CLEARED') {
-          const joinDate = prompt('Candidate will be converted to intern. Enter join date (YYYY-MM-DD):');
-          if (!joinDate) {
-            setLoading(false);
-            return;
-          }
-          
-          // Convert candidate to intern
-          const newIntern = await api.convertCandidateToIntern(selectedCandidate.id, joinDate);
+          // Convert candidate to intern without join date (will be set during offer generation)
+          const newIntern = await api.convertCandidateToIntern(selectedCandidate.id, null);
           
           // Update the new intern's hiring status to Selected/CLEARED
           await api.updateInternHiringStatus(
@@ -135,7 +131,7 @@ const HiringRounds = () => {
             statusUpdate.score ? Number.parseFloat(statusUpdate.score) : null
           );
           
-          alert('Candidate converted to intern successfully! Credentials sent via email.');
+          setToast({ message: 'Candidate converted to intern successfully! Credentials sent via email.', type: 'success' });
           
           // Refresh the list and close modal
           await fetchCandidatesAndInterns();
@@ -186,7 +182,7 @@ const HiringRounds = () => {
         await fetchCandidatesAndInterns();
         setShowModal(false);
         setSelectedCandidate(null);
-        alert('Candidate status updated successfully!');
+        setToast({ message: 'Candidate status updated successfully!', type: 'success' });
         setLoading(false);
         return;
       }
@@ -218,10 +214,10 @@ const HiringRounds = () => {
       
       setShowModal(false);
       setSelectedCandidate(null);
-      alert('Status updated successfully!');
+      setToast({ message: 'Status updated successfully!', type: 'success' });
     } catch (error) {
       console.error('Error updating status:', error);
-      alert('Failed to update status: ' + error.message);
+      setToast({ message: 'Failed to update status: ' + error.message, type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -263,6 +259,7 @@ const HiringRounds = () => {
   return (
     <div className="dashboard-container">
       <Sidebar />
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       
       <main className="main-content">
         <header className="dashboard-header">

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import api from '../services/api';
+import Toast from './Toast';
 import './HiringStatus.css';
 
 const HiringStatus = () => {
@@ -15,6 +16,7 @@ const HiringStatus = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hiringHistory, setHiringHistory] = useState([]);
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -32,8 +34,23 @@ const HiringStatus = () => {
       const candidatesData = await api.getCandidates();
       const internsData = await api.getInterns();
       
-      // Combine and filter by college if college user
-      const combined = [...candidatesData, ...internsData];
+      // Combine and remove duplicates based on email (interns take precedence)
+      const emailMap = new Map();
+      
+      // Add candidates first
+      candidatesData.forEach(candidate => {
+        emailMap.set(candidate.email, { ...candidate, type: 'candidate' });
+      });
+      
+      // Override with interns (they are the latest/selected version)
+      internsData.forEach(intern => {
+        emailMap.set(intern.email, { ...intern, type: 'intern' });
+      });
+      
+      // Convert back to array
+      const combined = Array.from(emailMap.values());
+      
+      // Filter by college if college user
       const filteredData = userData.userType === 'COLLEGE' && userData.collegeName
         ? combined.filter(student => student.collegeName && student.collegeName === userData.collegeName)
         : combined;
@@ -41,7 +58,7 @@ const HiringStatus = () => {
       setStudents(filteredData);
     } catch (error) {
       console.error('Error fetching students:', error);
-      alert('Failed to load students: ' + error.message);
+      setToast({ message: 'Failed to load students: ' + error.message, type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -85,12 +102,12 @@ const HiringStatus = () => {
     setShowModal(true);
     // Fetch hiring history based on student type
     try {
-      if (student.joiningDate) {
-        // It's an intern
-        const history = await api.getHiringRoundsByIntern(student.id);
+      if (student.type === 'intern' || student.status === 'ACTIVE' || student.status === 'ONBOARDING' || student.joinDate) {
+        // It's an intern - fetch by intern ID
+        const history = await api.getHiringRoundsByInternId(student.id);
         setHiringHistory(history);
       } else {
-        // It's a candidate
+        // It's a candidate - fetch by candidate ID
         const history = await api.getCandidateHiringRoundsByCandidateId(student.id);
         setHiringHistory(history);
       }
@@ -112,6 +129,7 @@ const HiringStatus = () => {
   return (
     <div className="dashboard-container">
       <Sidebar />
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       
       <main className="main-content">
         <header className="dashboard-header">

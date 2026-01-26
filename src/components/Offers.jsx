@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import api from '../services/api';
+import Toast from './Toast';
 import './Offers.css';
 
 const Offers = () => {
@@ -9,6 +10,7 @@ const Offers = () => {
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [toast, setToast] = useState(null);
   
   const [formData, setFormData] = useState({
     position: 'Software Engineering Intern',
@@ -95,13 +97,13 @@ const Offers = () => {
       setTimeout(async () => {
         await fetchOffers();
         await fetchInterns();
-        alert('Offer generated successfully! Intern status updated to OFFER_GENERATED.');
+        setToast({ message: 'Offer generated successfully! Intern status updated to OFFER_GENERATED.', type: 'success' });
       }, 500);
       
     } catch (err) {
       setError('Failed to generate offer: ' + (err.message || 'Unknown error'));
       console.error('Error generating offer:', err);
-      alert('Failed to generate offer. Check console for details.');
+      setToast({ message: 'Failed to generate offer. Check console for details.', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -117,7 +119,7 @@ const Offers = () => {
       await api.downloadOffer(offerId);
     } catch (error) {
       console.error('Error downloading offer:', error);
-      alert('Failed to download offer letter');
+      setToast({ message: 'Failed to download offer letter', type: 'error' });
     }
   };
 
@@ -126,11 +128,11 @@ const Offers = () => {
     if (confirmed) {
       try {
         await api.sendOffer(offerId);
-        alert('✅ Offer letter sent successfully!');
+        setToast({ message: 'Offer letter sent successfully!', type: 'success' });
         fetchOffers(); // Refresh the list
       } catch (error) {
         console.error('Error sending offer:', error);
-        alert('Failed to send offer letter: ' + error.message);
+        setToast({ message: 'Failed to send offer letter: ' + error.message, type: 'error' });
       }
     }
   };
@@ -159,6 +161,14 @@ const Offers = () => {
   return (
     <div className="dashboard-container">
       <Sidebar />
+      
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
       
       <main className="main-content">
         <header className="dashboard-header">
