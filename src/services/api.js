@@ -317,6 +317,22 @@ class ApiService {
     return this.get(`/offers/intern/${internId}`);
   }
 
+  async getOfferPreview(id) {
+    const token = this.getAuthToken();
+    const response = await fetch(`${this.baseURL}/offers/${id}/preview`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch offer preview');
+    }
+
+    return response.text(); // Return as HTML string
+  }
+
   async createOffer(offer) {
     return this.post('/offers', offer);
   }
@@ -332,11 +348,11 @@ class ApiService {
   async acceptOffer(id) {
     return this.patch(`/offers/${id}/accept`);
   }
-  
+
   async acceptOfferWithFile(id, formData) {
     const token = this.getAuthToken();
     const headers = {};
-    
+
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
@@ -348,11 +364,11 @@ class ApiService {
     });
     return this.handleResponse(response);
   }
-  
+
   getOfferDownloadUrl(id) {
     return `${this.baseURL}/offers/${id}/download`;
   }
-  
+
   async downloadOffer(id) {
     try {
       const token = this.getAuthToken();
@@ -361,45 +377,49 @@ class ApiService {
           'Authorization': `Bearer ${token}`
         }
       });
-      
+
       if (!response.ok) {
-        // Try to get error message from JSON response
-        try {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Download failed');
-        } catch (jsonError) {
-          throw new Error(`Download failed with status: ${response.status}`);
-        }
+        throw new Error(`Download failed with status: ${response.status}`);
       }
-      
+
       const blob = await response.blob();
-      
-      // Check if we actually got a PDF
-      if (blob.type === 'application/json') {
-        // Backend returned JSON error instead of PDF
-        const text = await blob.text();
-        const errorData = JSON.parse(text);
-        throw new Error(errorData.message || 'Server returned an error instead of PDF');
+
+      // Validate blob
+      if (!blob || blob.size === 0) {
+        throw new Error('Received empty PDF from server');
       }
-      
+
+      if (blob.type !== 'application/pdf' && blob.size < 100) {
+        // Fallback check: if it's too small and not marked as PDF, it might be an error message
+        const text = await blob.text();
+        throw new Error(`Invalid PDF received: ${text.substring(0, 100)}`);
+      }
+
+      // Get filename from Content-Disposition header
       const contentDisposition = response.headers.get('Content-Disposition');
-      let filename = 'Offer_Letter.pdf';
-      
+      let filename = `Internship_Offer_${id}.pdf`;
+
       if (contentDisposition) {
         const filenameMatch = contentDisposition.match(/filename="(.+)"/i);
         if (filenameMatch && filenameMatch[1]) {
           filename = filenameMatch[1];
         }
       }
-      
+
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = filename;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+
+      // Cleanup
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }, 100);
+
+      return true;
     } catch (error) {
       console.error('Download offer error:', error);
       throw error;

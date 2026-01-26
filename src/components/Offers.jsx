@@ -10,8 +10,9 @@ const Offers = () => {
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [previewHTML, setPreviewHTML] = useState('');
   const [toast, setToast] = useState(null);
-  
+
   const [formData, setFormData] = useState({
     position: 'Software Engineering Intern',
     department: 'Technology',
@@ -72,34 +73,34 @@ const Offers = () => {
     try {
       setLoading(true);
       setError('');
-      
+
       const offerData = {
         ...formData,
         intern: { id: selectedIntern.id }
       };
-      
+
       console.log('Creating offer with data:', offerData);
-      
+
       // Create the offer
       const createdOffer = await api.post('/offers', offerData);
       console.log('Offer created:', createdOffer);
-      
+
       // Update intern status to OFFER_GENERATED
       await api.put(`/interns/${selectedIntern.id}`, {
         ...selectedIntern,
         status: 'OFFER_GENERATED'
       });
-      
+
       // Close modal first
       setShowGenerateModal(false);
-      
+
       // Refresh data - wait a bit to ensure backend has processed
       setTimeout(async () => {
         await fetchOffers();
         await fetchInterns();
         setToast({ message: 'Offer generated successfully! Intern status updated to OFFER_GENERATED.', type: 'success' });
       }, 500);
-      
+
     } catch (err) {
       setError('Failed to generate offer: ' + (err.message || 'Unknown error'));
       console.error('Error generating offer:', err);
@@ -109,31 +110,40 @@ const Offers = () => {
     }
   };
 
-  const handlePreview = (intern) => {
-    setSelectedIntern(intern);
-    setShowPreview(true);
+  const handlePreview = async (offerId) => {
+    try {
+      setLoading(true);
+      const html = await api.getOfferPreview(offerId);
+      setPreviewHTML(html);
+      setShowPreview(true);
+    } catch (err) {
+      console.error('Error fetching preview:', err);
+      setToast({ message: 'Failed to load preview', type: 'error' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDownload = async (offerId) => {
     try {
+      setToast({ message: '⏳ Preparing your official PDF...', type: 'info' });
       await api.downloadOffer(offerId);
+      setToast({ message: '✅ Offer letter downloaded successfully!', type: 'success' });
     } catch (error) {
       console.error('Error downloading offer:', error);
-      setToast({ message: 'Failed to download offer letter', type: 'error' });
+      setToast({ message: '❌ Download failed: ' + error.message, type: 'error' });
     }
   };
 
   const handleSendEmail = async (offerId) => {
-    const confirmed = window.confirm('Send offer letter to the intern via email?');
-    if (confirmed) {
-      try {
-        await api.sendOffer(offerId);
-        setToast({ message: 'Offer letter sent successfully!', type: 'success' });
-        fetchOffers(); // Refresh the list
-      } catch (error) {
-        console.error('Error sending offer:', error);
-        setToast({ message: 'Failed to send offer letter: ' + error.message, type: 'error' });
-      }
+    try {
+      setToast({ message: '📨 Sending offer letter...', type: 'info' });
+      await api.sendOffer(offerId);
+      setToast({ message: '✅ Offer letter sent successfully!', type: 'success' });
+      fetchOffers();
+    } catch (error) {
+      console.error('Error sending offer:', error);
+      setToast({ message: 'Failed to send offer letter: ' + error.message, type: 'error' });
     }
   };
 
@@ -153,7 +163,7 @@ const Offers = () => {
   };
 
   const getInternsReadyForOffer = () => {
-    return interns.filter(i => 
+    return interns.filter(i =>
       i.status === 'DOCUMENT_VERIFIED'
     );
   };
@@ -161,7 +171,7 @@ const Offers = () => {
   return (
     <div className="dashboard-container">
       <Sidebar />
-      
+
       {toast && (
         <Toast
           message={toast.message}
@@ -169,7 +179,7 @@ const Offers = () => {
           onClose={() => setToast(null)}
         />
       )}
-      
+
       <main className="main-content">
         <header className="dashboard-header">
           <div>
@@ -279,21 +289,18 @@ const Offers = () => {
                           <div style={{ display: 'flex', gap: '8px' }}>
                             <button
                               className="btn btn-outline btn-sm"
-                              onClick={() => {
-                                const intern = interns.find(i => i.id === offer.intern?.id);
-                                if (intern) handlePreview(intern);
-                              }}
+                              onClick={() => handlePreview(offer.id)}
                             >
                               👁️ Preview
                             </button>
-                            <button 
+                            <button
                               className="btn btn-outline btn-sm"
                               onClick={() => handleDownload(offer.id)}
                             >
                               ⬇️ Download
                             </button>
                             {offer.status !== 'SENT' && offer.status !== 'ACCEPTED' && (
-                              <button 
+                              <button
                                 className="btn btn-primary btn-sm"
                                 onClick={() => handleSendEmail(offer.id)}
                               >
@@ -452,130 +459,30 @@ const Offers = () => {
         )}
 
         {/* Preview Modal */}
-        {showPreview && selectedIntern && (
+        {showPreview && (
           <div className="modal-overlay" onClick={() => setShowPreview(false)}>
-            <div className="modal-content modal-large offer-preview" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <h2>Offer Letter Preview</h2>
+            <div className="modal-content modal-large offer-preview" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '900px', width: '95%', height: '90vh', padding: 0 }}>
+              <div className="modal-header" style={{ padding: '20px' }}>
+                <h2>Official Offer Letter Preview</h2>
                 <button className="modal-close" onClick={() => setShowPreview(false)}>✕</button>
               </div>
 
-              {/* Offer Letter Preview */}
-              <div className="offer-letter">
-                <div className="offer-header">
-                  <div className="company-letterhead">
-                    <div className="company-logo-large">W</div>
-                    <h1>WISSEN TECHNOLOGY</h1>
-                    <p>Innovation • Excellence • Growth</p>
-                  </div>
-                </div>
-
-                <div className="offer-date">
-                  <strong>Date:</strong> {new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
-                </div>
-
-                <div className="offer-to">
-                  <strong>{selectedIntern.name}</strong><br />
-                  {selectedIntern.email}<br />
-                  {selectedIntern.college}
-                </div>
-
-                <div className="offer-subject">
-                  <strong>Subject: Offer of Internship</strong>
-                </div>
-
-                <div className="offer-body">
-                  <p>Dear {selectedIntern.name},</p>
-
-                  <p>
-                    We are pleased to offer you an internship position at Wissen Technology. We were impressed with your 
-                    credentials and believe you will be a valuable addition to our team.
-                  </p>
-
-                  <h3>Position Details:</h3>
-                  <table className="offer-details-table">
-                    <tbody>
-                      <tr>
-                        <td><strong>Position:</strong></td>
-                        <td>{formData.position}</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Department:</strong></td>
-                        <td>{formData.department}</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Duration:</strong></td>
-                        <td>{formData.duration}</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Start Date:</strong></td>
-                        <td>{formData.startDate || 'To be decided'}</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Location:</strong></td>
-                        <td>{formData.location}</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Work Mode:</strong></td>
-                        <td>{formData.workMode}</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Stipend:</strong></td>
-                        <td>₹{formData.stipend} per month</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Reporting Manager:</strong></td>
-                        <td>{formData.reportingManager || 'To be assigned'}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-
-                  <h3>Terms & Conditions:</h3>
-                  <ul className="offer-terms">
-                    <li>This offer is contingent upon successful completion of your background verification and document submission.</li>
-                    <li>You will be required to adhere to company policies and code of conduct during your internship period.</li>
-                    <li>The internship duration may be extended based on your performance and business requirements.</li>
-                    <li>You will be eligible for a performance review at the end of your internship period.</li>
-                  </ul>
-
-                  <p>
-                    Please confirm your acceptance of this offer by signing and returning this letter by{' '}
-                    {new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-IN')}.
-                  </p>
-
-                  <p>
-                    We look forward to welcoming you to the Wissen family and wish you a successful and enriching 
-                    internship experience.
-                  </p>
-
-                  <div className="offer-signature">
-                    <div>
-                      <strong>For Wissen Technology</strong><br /><br />
-                      _____________________<br />
-                      Authorized Signatory<br />
-                      HR Department
-                    </div>
-                  </div>
-
-                  <div className="offer-acceptance">
-                    <strong>Acceptance</strong><br /><br />
-                    I accept the above terms and conditions.<br /><br />
-                    _____________________<br />
-                    {selectedIntern.name}<br />
-                    Date: _______________
-                  </div>
-                </div>
+              <div className="modal-body" style={{ height: 'calc(100% - 130px)', padding: 0, overflow: 'hidden' }}>
+                <iframe
+                  title="Offer Letter Preview"
+                  srcDoc={previewHTML}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                    backgroundColor: '#f5f5f5'
+                  }}
+                />
               </div>
 
-              <div className="modal-actions">
+              <div className="modal-actions" style={{ padding: '20px', borderTop: '1px solid #ddd' }}>
                 <button className="btn btn-outline" onClick={() => setShowPreview(false)}>
                   Close
-                </button>
-                <button className="btn btn-outline" onClick={handleDownload}>
-                  ⬇️ Download PDF
-                </button>
-                <button className="btn btn-primary" onClick={handleSendEmail}>
-                  📧 Send via Email
                 </button>
               </div>
             </div>

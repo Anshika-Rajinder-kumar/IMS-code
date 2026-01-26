@@ -13,6 +13,7 @@ const InternOffer = () => {
   const [offerData, setOfferData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
+  const [previewHTML, setPreviewHTML] = useState('');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [signedOfferFile, setSignedOfferFile] = useState(null);
   const [toast, setToast] = useState(null);
@@ -66,28 +67,45 @@ const InternOffer = () => {
   const handleDownload = async () => {
     if (!offerData) return;
     try {
+      setToast({ message: '⏳ Preparing your official PDF...', type: 'info' });
       await api.downloadOffer(offerData.id);
+      setToast({ message: '✅ Offer letter downloaded successfully!', type: 'success' });
     } catch (error) {
       console.error('Error downloading offer:', error);
-      alert('Failed to download offer letter: ' + error.message);
+      setToast({ message: '❌ Download failed: ' + error.message, type: 'error' });
+    }
+  };
+
+  const handlePreview = async () => {
+    if (!offerData) return;
+    try {
+      setLoading(true);
+      const html = await api.getOfferPreview(offerData.id);
+      setPreviewHTML(html);
+      setShowPreview(true);
+    } catch (error) {
+      console.error('Error fetching preview:', error);
+      setToast({ message: 'Failed to load preview', type: 'error' });
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleAccept = async () => {
     setShowUploadModal(true);
   };
-  
+
   const handleUploadAndAccept = async () => {
     if (!signedOfferFile) {
       alert('Please upload the signed offer letter before accepting.');
       return;
     }
-    
+
     try {
       setLoading(true);
       const formData = new FormData();
       formData.append('signedOffer', signedOfferFile);
-      
+
       await api.acceptOfferWithFile(offerData.id, formData);
       await fetchOffer(user.internId);
       await fetchInternData(user.internId);
@@ -122,7 +140,7 @@ const InternOffer = () => {
     const verifiedDocs = uploadedDocs.filter(doc => doc.status === 'VERIFIED');
     const pendingDocs = uploadedDocs.filter(doc => doc.status === 'PENDING');
     const rejectedDocs = uploadedDocs.filter(doc => doc.status === 'REJECTED');
-    
+
     return {
       total: requiredDocs.length,
       uploaded: uploadedDocs.length,
@@ -160,7 +178,7 @@ const InternOffer = () => {
   return (
     <div className="dashboard-container">
       <Sidebar />
-      
+
       {toast && (
         <Toast
           message={toast.message}
@@ -168,7 +186,7 @@ const InternOffer = () => {
           onClose={() => setToast(null)}
         />
       )}
-      
+
       <main className="main-content">
         <header className="dashboard-header">
           <div>
@@ -185,7 +203,7 @@ const InternOffer = () => {
             <p style={{ color: '#666', fontSize: '16px', maxWidth: '600px', margin: '0 auto 24px' }}>
               Please upload all required documents to proceed with your offer letter generation.
             </p>
-            
+
             <div style={{
               display: 'inline-block',
               padding: '20px 32px',
@@ -201,8 +219,8 @@ const InternOffer = () => {
             </div>
 
             <div>
-              <button 
-                className="btn btn-primary" 
+              <button
+                className="btn btn-primary"
                 style={{ padding: '12px 32px', fontSize: '16px' }}
                 onClick={() => navigate('/documents')}
               >
@@ -220,7 +238,7 @@ const InternOffer = () => {
             <p style={{ color: '#666', fontSize: '16px', maxWidth: '600px', margin: '0 auto 24px' }}>
               All required documents have been uploaded successfully! Our HR team is currently reviewing them.
             </p>
-            
+
             <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginBottom: '24px' }}>
               <div style={{
                 padding: '16px 24px',
@@ -281,7 +299,7 @@ const InternOffer = () => {
                 <div style={{ fontSize: '14px', color: '#7f1d1d', marginBottom: '16px' }}>
                   Please re-upload the rejected documents to continue with verification.
                 </div>
-                <button 
+                <button
                   className="btn btn-danger"
                   onClick={() => navigate('/documents')}
                 >
@@ -304,7 +322,7 @@ const InternOffer = () => {
             <p style={{ color: '#666', fontSize: '16px', maxWidth: '600px', margin: '0 auto 24px' }}>
               Excellent! All your documents have been verified. Our HR team is now preparing your offer letter.
             </p>
-            
+
             <div style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -351,7 +369,7 @@ const InternOffer = () => {
                 <h3 className="card-title">Offer Summary</h3>
                 <span className="badge badge-success">Generated</span>
               </div>
-              
+
               <div style={{ padding: '24px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px', marginBottom: '24px' }}>
                   <div>
@@ -362,7 +380,7 @@ const InternOffer = () => {
                       {offerData.position}
                     </div>
                   </div>
-                  
+
                   <div>
                     <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>
                       Department
@@ -371,7 +389,7 @@ const InternOffer = () => {
                       {offerData.department}
                     </div>
                   </div>
-                  
+
                   <div>
                     <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>
                       Monthly Stipend
@@ -380,25 +398,25 @@ const InternOffer = () => {
                       ₹{offerData?.stipend?.toLocaleString() || '0'}
                     </div>
                   </div>
-                  
+
                   <div>
                     <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>
                       Start Date
                     </div>
                     <div style={{ fontSize: '16px', fontWeight: '600', color: '#333' }}>
-                      {new Date(offerData.startDate).toLocaleDateString('en-IN', { 
-                        day: 'numeric', 
-                        month: 'long', 
-                        year: 'numeric' 
+                      {new Date(offerData.startDate).toLocaleDateString('en-IN', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
                       })}
                     </div>
                   </div>
                 </div>
 
-                <div style={{ 
-                  marginTop: '32px', 
-                  padding: '20px', 
-                  background: '#fffbeb', 
+                <div style={{
+                  marginTop: '32px',
+                  padding: '20px',
+                  background: '#fffbeb',
                   border: '2px solid #fbbf24',
                   borderRadius: '12px',
                   display: 'flex',
@@ -416,7 +434,7 @@ const InternOffer = () => {
                     <button className="btn btn-outline" onClick={handleDownload}>
                       📥 Download PDF
                     </button>
-                    <button className="btn btn-outline" onClick={() => setShowPreview(true)}>
+                    <button className="btn btn-outline" onClick={handlePreview}>
                       👁️ Preview
                     </button>
                     <button className="btn btn-success" onClick={handleAccept}>
@@ -443,10 +461,10 @@ const InternOffer = () => {
               <div style={{ fontSize: '64px', marginBottom: '16px' }}>🎊</div>
               <h2 style={{ margin: '0 0 8px 0', fontSize: '28px' }}>Offer Accepted!</h2>
               <p style={{ margin: 0, opacity: 0.9, fontSize: '16px' }}>
-                Welcome to Wissen Technology! Your journey starts on {new Date(offerData.startDate).toLocaleDateString('en-IN', { 
-                  day: 'numeric', 
-                  month: 'long', 
-                  year: 'numeric' 
+                Welcome to Wissen Technology! Your journey starts on {new Date(offerData.startDate).toLocaleDateString('en-IN', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric'
                 })}
               </p>
             </div>
@@ -464,11 +482,11 @@ const InternOffer = () => {
                     border: '1px solid #e5e7eb',
                     borderRadius: '8px'
                   }}>
-                    <div style={{ 
-                      width: '40px', 
-                      height: '40px', 
-                      borderRadius: '50%', 
-                      background: '#dbeafe', 
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      background: '#dbeafe',
                       color: '#1e40af',
                       display: 'flex',
                       alignItems: 'center',
@@ -491,11 +509,11 @@ const InternOffer = () => {
                     border: '1px solid #e5e7eb',
                     borderRadius: '8px'
                   }}>
-                    <div style={{ 
-                      width: '40px', 
-                      height: '40px', 
-                      borderRadius: '50%', 
-                      background: '#dbeafe', 
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      background: '#dbeafe',
                       color: '#1e40af',
                       display: 'flex',
                       alignItems: 'center',
@@ -518,11 +536,11 @@ const InternOffer = () => {
                     border: '1px solid #e5e7eb',
                     borderRadius: '8px'
                   }}>
-                    <div style={{ 
-                      width: '40px', 
-                      height: '40px', 
-                      borderRadius: '50%', 
-                      background: '#dbeafe', 
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      background: '#dbeafe',
                       color: '#1e40af',
                       display: 'flex',
                       alignItems: 'center',
@@ -552,73 +570,28 @@ const InternOffer = () => {
         {/* Preview Modal */}
         {showPreview && offerData && (
           <div className="modal-overlay" onClick={() => setShowPreview(false)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px' }}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '900px', width: '95%', height: '90vh' }}>
               <div className="modal-header">
-                <h2 className="modal-title">Offer Letter Preview</h2>
+                <h2 className="modal-title">Official Offer Letter Preview</h2>
                 <button className="modal-close" onClick={() => setShowPreview(false)}>×</button>
               </div>
-              
-              <div className="modal-body" style={{ maxHeight: '600px', overflow: 'auto' }}>
-                <div style={{ padding: '40px', background: 'white', fontFamily: 'serif' }}>
-                  <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-                    <h1 style={{ color: '#1e40af', margin: '0 0 8px 0' }}>Wissen Technology</h1>
-                    <p style={{ margin: 0, color: '#666' }}>Bangalore, India</p>
-                  </div>
 
-                  <div style={{ marginBottom: '24px', textAlign: 'right', color: '#666' }}>
-                    Date: {new Date(offerData.generatedAt).toLocaleDateString('en-IN', { 
-                      day: 'numeric', 
-                      month: 'long', 
-                      year: 'numeric' 
-                    })}
-                  </div>
-
-                  <div style={{ marginBottom: '24px' }}>
-                    <strong>{user?.name}</strong><br />
-                    {user?.email}
-                  </div>
-
-                  <h2 style={{ fontSize: '18px', marginBottom: '16px' }}>
-                    Subject: Internship Offer - {offerData.position}
-                  </h2>
-
-                  <p style={{ marginBottom: '16px', lineHeight: '1.6' }}>
-                    Dear {user?.name},
-                  </p>
-
-                  <p style={{ marginBottom: '16px', lineHeight: '1.6' }}>
-                    We are pleased to offer you the position of <strong>{offerData.position}</strong> in the {offerData.department} department at Wissen Technology.
-                  </p>
-
-                  <div style={{ marginBottom: '24px', padding: '20px', background: '#f9fafb', borderRadius: '8px' }}>
-                    <h3 style={{ fontSize: '16px', marginBottom: '12px' }}>Offer Details:</h3>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                      <tbody>
-                        <tr>
-                          <td style={{ padding: '8px 0', borderBottom: '1px solid #e5e7eb' }}><strong>Position:</strong></td>
-                          <td style={{ padding: '8px 0', borderBottom: '1px solid #e5e7eb' }}>{offerData.position}</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '8px 0', borderBottom: '1px solid #e5e7eb' }}><strong>Monthly Stipend:</strong></td>
-                          <td style={{ padding: '8px 0', borderBottom: '1px solid #e5e7eb' }}>₹{offerData.stipend.toLocaleString()}</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '8px 0', borderBottom: '1px solid #e5e7eb' }}><strong>Start Date:</strong></td>
-                          <td style={{ padding: '8px 0', borderBottom: '1px solid #e5e7eb' }}>{new Date(offerData.startDate).toLocaleDateString('en-IN')}</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '8px 0' }}><strong>Location:</strong></td>
-                          <td style={{ padding: '8px 0' }}>{offerData.location}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+              <div className="modal-body" style={{ height: 'calc(100% - 130px)', padding: 0, overflow: 'hidden' }}>
+                <iframe
+                  title="Offer Letter Preview"
+                  srcDoc={previewHTML}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                    backgroundColor: '#f5f5f5'
+                  }}
+                />
               </div>
-              
-              <div className="modal-footer">
+
+              <div className="modal-footer" style={{ justifyContent: 'flex-end', gap: '12px' }}>
                 <button className="btn btn-outline" onClick={handleDownload}>
-                  📥 Download
+                  📥 Download PDF
                 </button>
                 <button className="btn btn-success" onClick={() => {
                   setShowPreview(false);
@@ -630,7 +603,7 @@ const InternOffer = () => {
             </div>
           </div>
         )}
-        
+
         {/* Upload Signed Offer Modal */}
         {showUploadModal && (
           <div className="modal-overlay" onClick={() => setShowUploadModal(false)}>
@@ -639,30 +612,30 @@ const InternOffer = () => {
                 <h2>📤 Upload Signed Offer Letter</h2>
                 <button className="close-btn" onClick={() => setShowUploadModal(false)}>×</button>
               </div>
-              
+
               <div className="modal-body">
-                <div style={{ 
-                  background: '#fef3c7', 
-                  border: '1px solid #fbbf24', 
-                  borderRadius: '8px', 
-                  padding: '16px', 
-                  marginBottom: '20px' 
+                <div style={{
+                  background: '#fef3c7',
+                  border: '1px solid #fbbf24',
+                  borderRadius: '8px',
+                  padding: '16px',
+                  marginBottom: '20px'
                 }}>
                   <p style={{ margin: 0, color: '#92400e' }}>
                     <strong>⚠️ Important:</strong> Please download the offer letter, sign it, scan/take a clear photo, and upload it below to accept the offer.
                   </p>
                 </div>
-                
+
                 <div style={{ marginBottom: '20px' }}>
                   <button className="btn btn-outline" onClick={handleDownload} style={{ width: '100%' }}>
                     📥 Download Offer Letter
                   </button>
                 </div>
-                
+
                 <div style={{ marginBottom: '20px' }}>
-                  <label style={{ 
-                    display: 'block', 
-                    marginBottom: '8px', 
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '8px',
                     fontWeight: '500',
                     color: '#374151'
                   }}>
@@ -687,13 +660,13 @@ const InternOffer = () => {
                   )}
                 </div>
               </div>
-              
+
               <div className="modal-footer">
                 <button className="btn btn-outline" onClick={() => setShowUploadModal(false)}>
                   Cancel
                 </button>
-                <button 
-                  className="btn btn-success" 
+                <button
+                  className="btn btn-success"
                   onClick={handleUploadAndAccept}
                   disabled={!signedOfferFile}
                   style={{ opacity: signedOfferFile ? 1 : 0.5 }}
