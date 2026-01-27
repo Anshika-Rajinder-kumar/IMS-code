@@ -144,14 +144,18 @@ const LearningAssignment = () => {
                                         className={`intern-item ${selectedIntern?.id === intern.id ? 'active' : ''}`}
                                         onClick={() => handleInternSelect(intern)}
                                     >
-                                        <div className="intern-avatar">
-                                            {intern.name.charAt(0)}
-                                        </div>
-                                        <div className="intern-info">
+                                        <div className="intern-content">
                                             <div className="intern-name">{intern.name}</div>
-                                            <div className="intern-meta">{intern.email}</div>
-                                            <div className="intern-meta">{intern.collegeName}</div>
+                                            <div className="intern-info-row">
+                                                <span className="info-icon">✉</span>
+                                                <span className="info-text">{intern.email}</span>
+                                            </div>
+                                            <div className="intern-info-row">
+                                                <span className="info-icon">🎓</span>
+                                                <span className="info-text">{intern.collegeName}</span>
+                                            </div>
                                         </div>
+                                        <div className="intern-arrow">›</div>
                                     </div>
                                 ))
                             )}
@@ -162,7 +166,7 @@ const LearningAssignment = () => {
                     <div className="assignment-panel card">
                         {!selectedIntern ? (
                             <div className="empty-state">
-                                <span style={{ fontSize: '48px' }}>👈</span>
+                               
                                 <h3>Select an intern to start assigning</h3>
                             </div>
                         ) : (

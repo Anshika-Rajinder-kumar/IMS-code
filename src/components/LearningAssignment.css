@@ -18,6 +18,10 @@
     flex-direction: column;
     overflow: hidden;
     padding: 0;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e5e7eb;
 }
 
 .assignment-panel {
@@ -26,76 +30,165 @@
     flex-direction: column;
     overflow: hidden;
     padding: 0;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e5e7eb;
 }
 
 .panel-header {
-    padding: 20px;
-    border-bottom: 1px solid var(--border-color);
-    background-color: #f9fafb;
+    padding: 24px;
+    border-bottom: 2px solid #e5e7eb;
+    background: linear-gradient(to bottom, #ffffff, #f9fafb);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .panel-header h3 {
     margin: 0 0 16px 0;
-    font-size: 18px;
-    color: var(--text-primary);
+    font-size: 20px;
+    font-weight: 700;
+    color: #1f2937;
+    letter-spacing: -0.02em;
+}
+
+.search-box {
+    position: relative;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 14px;
+    transition: all 0.2s;
+    background: #f9fafb;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: #6366f1;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.search-box input::placeholder {
+    color: #9ca3af;
 }
 
 .intern-list {
     flex: 1;
     overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db #f3f4f6;
+}
+
+.intern-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.intern-list::-webkit-scrollbar-track {
+    background: #f3f4f6;
+}
+
+.intern-list::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+}
+
+.intern-list::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
 }
 
 .intern-item {
     display: flex;
     align-items: center;
-    gap: 16px;
+    justify-content: space-between;
     padding: 16px 20px;
-    border-bottom: 1px solid var(--border-color);
+    margin: 8px 12px;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: white;
+    border: 2px solid #e5e7eb;
+    position: relative;
 }
 
 .intern-item:hover {
-    background-color: #f3f4f6;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-color: #cbd5e1;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .intern-item.active {
-    background-color: #eff6ff;
-    border-left: 4px solid var(--primary-color);
+    background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+    border-color: #3b82f6;
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.2);
 }
 
-.intern-avatar {
-    width: 40px;
-    height: 40px;
-    background-color: var(--primary-color);
-    color: white;
-    border-radius: 50%;
+.intern-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(to bottom, #3b82f6, #8b5cf6);
+    border-radius: 10px 0 0 10px;
+}
+
+.intern-content {
+    flex: 1;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    flex-shrink: 0;
-}
-
-.intern-info {
-    overflow: hidden;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .intern-name {
-    font-weight: 600;
-    font-size: 15px;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-weight: 700;
+    font-size: 17px;
+    color: #111827;
+    line-height: 1.3;
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
 }
 
-.intern-meta {
-    font-size: 12px;
-    color: var(--text-secondary);
-    white-space: nowrap;
+.intern-info-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.info-icon {
+    font-size: 15px;
+    flex-shrink: 0;
+    opacity: 0.8;
+}
+
+.info-text {
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.intern-arrow {
+    font-size: 28px;
+    color: #cbd5e1;
+    transition: all 0.3s ease;
+    font-weight: 300;
+}
+
+.intern-item:hover .intern-arrow {
+    color: #94a3b8;
+    transform: translateX(4px);
+}
+
+.intern-item.active .intern-arrow {
+    color: #3b82f6;
+    transform: translateX(4px);
 }
 
 .empty-state {

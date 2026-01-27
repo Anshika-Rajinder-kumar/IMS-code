@@ -103,7 +103,7 @@ const Login = () => {
               onChange={handleChange}
             >
               <option value="ADMIN">Admin</option>
-              <option value="HR">HR</option>
+              
               <option value="COLLEGE">College</option>
               <option value="INTERN">Intern</option>
             </select>

@@ -132,8 +132,8 @@ const Register = () => {
                 value={formData.userType}
                 onChange={handleChange}
               >
-                <option value="ADMIN">🔑 Admin</option>
-                <option value="HR">👔 HR</option>
+                <option value="ADMIN">Admin</option>
+                
               </select>
               <small style={{ color: '#666', fontSize: '11px', marginTop: '4px', display: 'block' }}>
                 Note: COLLEGE and INTERN accounts are automatically created when colleges/interns are added by admin.
