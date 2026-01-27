@@ -10,6 +10,9 @@ import java.util.Set;
 @Data
 @Builder
 public class InternLearningResponse {
+    private Long internId;
+    private String internName;
+    private String internEmail;
     private Set<LearningCourse> courses;
     private Set<Project> projects;
 }

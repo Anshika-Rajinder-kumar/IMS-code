@@ -492,6 +492,10 @@ class ApiService {
     return this.get('/admin/course-pool');
   }
 
+  async getAllCourses() {
+    return this.get('/admin/course-pool');
+  }
+
   async createCourse(course) {
     return this.post('/admin/course-pool', course);
   }
@@ -504,12 +508,33 @@ class ApiService {
     return this.get('/admin/project-pool');
   }
 
+  async getAllProjects() {
+    return this.get('/admin/project-pool');
+  }
+
   async createProject(project) {
     return this.post('/admin/project-pool', project);
   }
 
   async deleteProject(id) {
     return this.delete(`/admin/project-pool/${id}`);
+  }
+
+  // Project Progress APIs
+  async createOrUpdateProjectProgress(progressData) {
+    return this.post('/project-progress', progressData);
+  }
+
+  async getProgressByIntern(internId) {
+    return this.get(`/project-progress/intern/${internId}`);
+  }
+
+  async getAllProjectProgress() {
+    return this.get('/project-progress');
+  }
+
+  async getProgressById(id) {
+    return this.get(`/project-progress/${id}`);
   }
 }
 

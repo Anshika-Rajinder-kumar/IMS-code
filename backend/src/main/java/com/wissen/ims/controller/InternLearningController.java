@@ -32,6 +32,9 @@ public class InternLearningController {
                     .orElseThrow(() -> new RuntimeException("Intern profile not found"));
 
             InternLearningResponse response = InternLearningResponse.builder()
+                    .internId(intern.getId())
+                    .internName(intern.getName())
+                    .internEmail(intern.getEmail())
                     .courses(intern.getAssignedCourses())
                     .projects(intern.getAssignedProjects())
                     .build();

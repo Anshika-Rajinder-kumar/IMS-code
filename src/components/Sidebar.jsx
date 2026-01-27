@@ -35,11 +35,12 @@ const Sidebar = () => {
         { path: '/colleges', label: 'Colleges' },
         { path: '/admin/course-project-pool', label: 'Courses / Projects' },
         { path: '/admin/learning-assignment', label: 'Assign Courses' },
+        { path: '/intern-performance', label: 'Intern Performance' },
         { path: '/hiring-rounds', label: 'Hiring Rounds' },
         { path: '/interns', label: 'Interns' },
         { path: '/documents', label: 'Documents' },
         { path: '/offers', label: 'Offer Letters' },
-        { path: '/reports', label: 'Reports' },
+        
         { path: '/settings', label: 'Settings' }
       ];
     } else if (userType === 'COLLEGE') {
@@ -51,7 +52,8 @@ const Sidebar = () => {
       ];
     } else if (userType === 'INTERN') {
       return [
-        { path: '/learning', label: 'My Learning' },
+        { path: '/my-projects', label: 'My Projects' },
+        { path: '/learning', label: 'My Courses' },
         { path: '/documents', label: 'My Documents' },
         { path: '/offer', label: 'My Offer' },
         { path: '/settings', label: 'Settings' }

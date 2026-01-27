@@ -17,6 +17,8 @@ import LearningProgress from './components/LearningProgress';
 import Settings from './components/Settings';
 import LearningAssignment from './components/LearningAssignment';
 import CourseProjectPool from './components/CourseProjectPool';
+import InternProjectView from './components/InternProjectView';
+import InternPerformance from './components/InternPerformance';
 
 function App() {
   const PrivateRoute = ({ children }) => {
@@ -140,8 +142,25 @@ function App() {
         <Route
           path="/learning"
           element={
+            <RoleBasedRoute
+              component={InternPerformance}
+              internComponent={InternProjectView}
+            />
+          }
+        />
+        <Route
+          path="/intern-performance"
+          element={
             <PrivateRoute>
-              <LearningProgress />
+              <InternPerformance />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/my-projects"
+          element={
+            <PrivateRoute>
+              <InternProjectView />
             </PrivateRoute>
           }
         />

@@ -139,7 +139,7 @@ const Dashboard = () => {
               <div className="stat-content">
                 <div className="stat-label">{stat.title}</div>
                 <div className="stat-value">{stat.value}</div>
-                <div className="stat-change positive">{stat.change} from last month</div>
+               
               </div>
             </div>
           ))}
