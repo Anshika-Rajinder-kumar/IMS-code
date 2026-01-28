@@ -1,0 +1,51 @@
+# Application Configuration
+spring.application.name=
+
+# Server Configuration
+server.port=
+server.servlet.context-path=
+
+# Database Configuration
+spring.datasource.url=
+spring.datasource.username=
+spring.datasource.password=
+spring.datasource.driver-class-name=
+
+# JPA Configuration
+spring.jpa.hibernate.ddl-auto=
+spring.jpa.show-sql=
+spring.jpa.properties.hibernate.dialect=
+spring.jpa.properties.hibernate.format_sql=
+
+# JWT Configuration
+# Updated: 2026-01-20
+jwt.secret=
+jwt.expiration=
+
+# CORS Configuration
+cors.allowed-origins=
+
+# File Upload Configuration
+spring.servlet.multipart.max-file-size=
+spring.servlet.multipart.max-request-size=
+file.upload-dir=
+
+# Logging Configuration
+logging.level.com.wissen=
+logging.level.org.springframework.security=
+logging.level.org.hibernate.SQL=
+
+# Email Configuration
+# Replace with your Gmail credentials
+spring.mail.host=
+spring.mail.port=
+spring.mail.username=
+spring.mail.password=
+spring.mail.properties.mail.smtp.auth=
+spring.mail.properties.mail.smtp.starttls.enable=
+spring.mail.properties.mail.smtp.starttls.required=
+spring.mail.properties.mail.smtp.ssl.trust=
+spring.mail.properties.mail.debug=
+
+# Application Configuration
+app.name=

@@ -1,0 +1,20 @@
+# Frontend dependencies
+node_modules/
+
+# Backend build artifacts
+target/
+*.class
+*.jar
+*.war
+
+# IDE / OS files
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# Environment / config files
+application.properties
+application-*.properties
+.env
+.env.production
