@@ -14,11 +14,13 @@ import StudentUpload from './components/StudentUpload';
 import BulkUpload from './components/BulkUpload';
 import HiringStatus from './components/HiringStatus';
 import LearningProgress from './components/LearningProgress';
+import AttendanceOverview from './components/AttendanceOverview';
 import Settings from './components/Settings';
 import LearningAssignment from './components/LearningAssignment';
 import CourseProjectPool from './components/CourseProjectPool';
 import InternProjectView from './components/InternProjectView';
 import InternPerformance from './components/InternPerformance';
+import Attendance from './components/Attendance';
 
 function App() {
   const PrivateRoute = ({ children }) => {
@@ -47,6 +49,22 @@ function App() {
           element={
             <PrivateRoute>
               <Dashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/attendance"
+          element={
+            <PrivateRoute>
+              <Attendance />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/attendance"
+          element={
+            <PrivateRoute>
+              <AttendanceOverview />
             </PrivateRoute>
           }
         />

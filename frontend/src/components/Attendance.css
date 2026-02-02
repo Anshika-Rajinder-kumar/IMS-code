@@ -1,0 +1,137 @@
+.attendance-card {
+  background: white;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  max-width: 600px;
+  margin: 24px 0;
+}
+
+.attendance-status-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.status-label {
+  font-weight: 600;
+  color: #4a5568;
+  font-size: 1.1rem;
+}
+
+.status-badge {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+}
+
+.network-warning {
+  background-color: #fffaf0;
+  border: 1px solid #feebc8;
+  color: #c05621;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.warning-icon {
+  font-size: 1.1rem;
+}
+
+.status-present {
+  background-color: #c6f6d5;
+  color: #22543d;
+}
+
+.status-half-day {
+  background-color: #fefcbf;
+  color: #744210;
+}
+
+.status-absent {
+  background-color: #fed7d7;
+  color: #822727;
+}
+
+.status-none {
+  background-color: #edf2f7;
+  color: #4a5568;
+}
+
+.attendance-times {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.time-box {
+  background: #f7fafc;
+  padding: 20px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.time-label {
+  font-size: 0.85rem;
+  color: #718096;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.time-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.attendance-actions {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.check-in-btn,
+.check-out-btn {
+  flex: 1;
+  padding: 14px;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.attendance-info {
+  background-color: #ebf8ff;
+  border-left: 4px solid #3182ce;
+  padding: 12px 16px;
+  border-radius: 4px;
+}
+
+.attendance-info p {
+  margin: 0;
+  color: #2c5282;
+  font-size: 0.9rem;
+}
+
+.loader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  color: #718096;
+  font-weight: 500;
+}

@@ -73,7 +73,7 @@ Complete backend implementation to support the enhanced UI with intern-specific 
 
 #### Added Fields (`Intern.java`)
 - `hiringRound`: Current round name
-- `hiringStatus`: HiringStatus enum (NOT_STARTED, PENDING, IN_PROGRESS, CLEARED, REJECTED)
+- `hiringStatus`: HiringStatus enum (NOT_STARTED, PENDING, IN_PROGRESS, CLEARED, REJECTED, ON_HOLD)
 - `hiringScore`: Overall hiring score
 
 #### New Enum (HiringStatus)

@@ -85,12 +85,12 @@ public class Candidate {
     }
 
     public enum CandidateStatus {
-        APPLIED,           // Initial application
-        SCREENING,         // Under screening
+        APPLIED, // Initial application
+        SCREENING, // Under screening
         INTERVIEW_SCHEDULED, // Interview scheduled
-        INTERVIEWING,      // Currently interviewing
-        SELECTED,          // Selected for internship
-        REJECTED,          // Not selected
-        WITHDRAWN          // Candidate withdrew
+        INTERVIEWING, // Currently interviewing
+        SELECTED, // Selected for internship
+        REJECTED, // Not selected
+        WITHDRAWN // Candidate withdrew
     }
 }

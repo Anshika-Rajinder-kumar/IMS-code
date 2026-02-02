@@ -38,9 +38,10 @@ const Sidebar = () => {
         { path: '/intern-performance', label: 'Intern Performance' },
         { path: '/hiring-rounds', label: 'Hiring Rounds' },
         { path: '/interns', label: 'Interns' },
+        { path: '/admin/attendance', label: 'Attendance Overview' },
         { path: '/documents', label: 'Documents' },
         { path: '/offers', label: 'Offer Letters' },
-        
+
         { path: '/settings', label: 'Settings' }
       ];
     } else if (userType === 'COLLEGE') {
@@ -53,6 +54,7 @@ const Sidebar = () => {
     } else if (userType === 'INTERN') {
       return [
         { path: '/my-projects', label: 'My Projects' },
+        { path: '/attendance', label: 'Attendance' },
         { path: '/learning', label: 'My Courses' },
         { path: '/documents', label: 'My Documents' },
         { path: '/offer', label: 'My Offer' },

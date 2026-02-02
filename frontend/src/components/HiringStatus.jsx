@@ -33,28 +33,28 @@ const HiringStatus = () => {
       // Fetch both candidates and interns
       const candidatesData = await api.getCandidates();
       const internsData = await api.getInterns();
-      
+
       // Combine and remove duplicates based on email (interns take precedence)
       const emailMap = new Map();
-      
+
       // Add candidates first
       candidatesData.forEach(candidate => {
         emailMap.set(candidate.email, { ...candidate, type: 'candidate' });
       });
-      
+
       // Override with interns (they are the latest/selected version)
       internsData.forEach(intern => {
         emailMap.set(intern.email, { ...intern, type: 'intern' });
       });
-      
+
       // Convert back to array
       const combined = Array.from(emailMap.values());
-      
+
       // Filter by college if college user
       const filteredData = userData.userType === 'COLLEGE' && userData.collegeName
         ? combined.filter(student => student.collegeName && student.collegeName === userData.collegeName)
         : combined;
-      
+
       setStudents(filteredData);
     } catch (error) {
       console.error('Error fetching students:', error);
@@ -88,8 +88,8 @@ const HiringStatus = () => {
 
   const filteredStudents = students.filter(student => {
     const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         student.branch.toLowerCase().includes(searchTerm.toLowerCase());
+      student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.branch.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || student.hiringStatus === filterStatus;
     const matchesRound = filterRound === 'all' || student.hiringRound === filterRound;
     return matchesSearch && matchesStatus && matchesRound;
@@ -130,7 +130,7 @@ const HiringStatus = () => {
     <div className="dashboard-container">
       <Sidebar />
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      
+
       <main className="main-content">
         <header className="dashboard-header">
           <div>
@@ -233,7 +233,7 @@ const HiringStatus = () => {
                       <p className="student-email">{student.email}</p>
                     </div>
                   </div>
-                  
+
                   <div className="student-details">
                     <div className="detail-row">
                       <span className="detail-text">{student.branch}</span>
@@ -256,7 +256,7 @@ const HiringStatus = () => {
                         {student.hiringRound || 'Not Started'}
                       </span>
                     </div>
-                    
+
                     <div className="status-row">
                       <span className={`status-badge ${statusBadge.class}`}>
                         {statusBadge.icon} {student.hiringStatus || 'NOT_STARTED'}
@@ -269,7 +269,7 @@ const HiringStatus = () => {
                     </div>
                   </div>
 
-                  <button 
+                  <button
                     className="view-details-btn"
                     onClick={() => viewDetails(student)}
                   >
@@ -286,7 +286,7 @@ const HiringStatus = () => {
           <div className="modal-overlay" onClick={() => setShowModal(false)}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
-              
+
               <div className="modal-header">
                 <div className="modal-avatar">{selectedStudent.name.charAt(0)}</div>
                 <div>

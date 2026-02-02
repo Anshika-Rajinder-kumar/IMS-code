@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = '/api';
 
 class ApiService {
   constructor() {
@@ -127,6 +127,23 @@ class ApiService {
 
   async register(userData) {
     return this.post('/auth/register', userData);
+  }
+
+  // Attendance APIs
+  async getTodayAttendance() {
+    return this.get('/attendance/today');
+  }
+
+  async checkIn() {
+    return this.post('/attendance/check-in');
+  }
+
+  async checkOut() {
+    return this.post('/attendance/check-out');
+  }
+
+  async getMonthlyAttendance(internId, year, month) {
+    return this.get(`/attendance/admin/monthly?internId=${internId}&year=${year}&month=${month}`);
   }
 
   // Dashboard APIs
