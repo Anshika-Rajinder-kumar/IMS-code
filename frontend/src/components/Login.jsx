@@ -23,7 +23,7 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Simple validation
     if (!formData.email || !formData.password) {
       setError('Please fill in all fields');
@@ -33,12 +33,12 @@ const Login = () => {
     try {
       setLoading(true);
       setError('');
-      
+
       // Call API for authentication
       const response = await api.login(formData.email, formData.password, formData.userType);
-      
+
       console.log('✅ Login successful for:', response.userType);
-      
+
       // Store token and user data in localStorage
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify({
@@ -49,7 +49,7 @@ const Login = () => {
         collegeName: response.collegeName,  // For COLLEGE users
         internId: response.internId         // For INTERN users
       }));
-      
+
       // Small delay to show loading state, then navigate
       setTimeout(() => {
         // Route based on user type
@@ -77,7 +77,7 @@ const Login = () => {
         <div className="shape shape-1"></div>
         <div className="shape shape-2"></div>
       </div>
-      
+
       <div className="login-card fade-in">
         <div className="login-header">
           <div className="company-logo">
@@ -103,7 +103,6 @@ const Login = () => {
               onChange={handleChange}
             >
               <option value="ADMIN">Admin</option>
-              
               <option value="COLLEGE">College</option>
               <option value="INTERN">Intern</option>
             </select>

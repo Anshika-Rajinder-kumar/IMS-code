@@ -18,9 +18,10 @@ import AttendanceOverview from './components/AttendanceOverview';
 import Settings from './components/Settings';
 import LearningAssignment from './components/LearningAssignment';
 import CourseProjectPool from './components/CourseProjectPool';
-import InternProjectView from './components/InternProjectView';
 import InternPerformance from './components/InternPerformance';
 import Attendance from './components/Attendance';
+import InternCoursesView from './components/learning/InternCoursesView';
+import InternProjectsView from './components/learning/InternProjectsView';
 
 function App() {
   const PrivateRoute = ({ children }) => {
@@ -28,14 +29,14 @@ function App() {
     return user ? children : <Navigate to="/login" />;
   };
 
-  const RoleBasedRoute = ({ component: Component, internComponent: InternComponent }) => {
+  const RoleBasedRoute = ({ component: Component, internComponent: InternComponent, ...props }) => {
     const user = localStorage.getItem('user');
     if (!user) return <Navigate to="/login" />;
 
     const userData = JSON.parse(user);
     const isIntern = userData.userType?.toUpperCase() === 'INTERN';
 
-    return isIntern && InternComponent ? <InternComponent /> : <Component />;
+    return isIntern && InternComponent ? <InternComponent {...props} /> : <Component {...props} />;
   };
 
   return (
@@ -158,13 +159,17 @@ function App() {
           }
         />
         <Route
-          path="/learning"
+          path="/my-courses"
           element={
             <RoleBasedRoute
               component={InternPerformance}
-              internComponent={InternProjectView}
+              internComponent={InternCoursesView}
             />
           }
+        />
+        <Route
+          path="/learning"
+          element={<Navigate to="/my-courses" />}
         />
         <Route
           path="/intern-performance"
@@ -178,7 +183,7 @@ function App() {
           path="/my-projects"
           element={
             <PrivateRoute>
-              <InternProjectView />
+              <InternProjectsView />
             </PrivateRoute>
           }
         />

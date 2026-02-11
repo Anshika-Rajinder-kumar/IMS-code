@@ -55,7 +55,7 @@ const Sidebar = () => {
       return [
         { path: '/my-projects', label: 'My Projects' },
         { path: '/attendance', label: 'Attendance' },
-        { path: '/learning', label: 'My Courses' },
+        { path: '/my-courses', label: 'My Courses' },
         { path: '/documents', label: 'My Documents' },
         { path: '/offer', label: 'My Offer' },
         { path: '/settings', label: 'Settings' }
