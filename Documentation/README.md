@@ -131,7 +131,7 @@ docker-compose up --build
 
 ---
 
-## 🎯 Hiring Workflow Summary
+##  Hiring Workflow Summary
 1. **College Visit**: Schedule and complete a visit.
 2. **Shortlisting**: Add selected interns to the platform.
 3. **Documents**: Interns/HR upload required documents (Aadhaar, Marksheets, etc.).

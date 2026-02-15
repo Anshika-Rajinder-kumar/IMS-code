@@ -7,9 +7,12 @@ const InternPerformance = () => {
   const [allProgress, setAllProgress] = useState([]);
   const [interns, setInterns] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedIntern, setSelectedIntern] = useState('all');
-  const [selectedProgress, setSelectedProgress] = useState(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedInternId, setSelectedInternId] = useState('all');
+  const [selectedProjectId, setSelectedProjectId] = useState('all');
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDateProgress, setSelectedDateProgress] = useState(null);
+  const [adminComment, setAdminComment] = useState('');
+  const [savingComment, setSavingComment] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -31,10 +34,6 @@ const InternPerformance = () => {
     }
   };
 
-  const filteredProgress = selectedIntern === 'all' 
-    ? allProgress 
-    : allProgress.filter(p => p.internId === parseInt(selectedIntern));
-
   const getProgressColor = (percentage) => {
     if (percentage < 25) return '#ef4444';
     if (percentage < 50) return '#f97316';
@@ -42,34 +41,204 @@ const InternPerformance = () => {
     return '#22c55e';
   };
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  // Filter logic
+  const currentIntern = interns.find(i => i.id === parseInt(selectedInternId));
+  const internProjects = currentIntern?.assignedProjects || [];
+
+  const filteredProgress = allProgress.filter(p => {
+    const isInternMatch = selectedInternId === 'all' || p.internId === parseInt(selectedInternId);
+    const isProjectMatch = selectedProjectId === 'all' || p.projectId === parseInt(selectedProjectId);
+    return isInternMatch && isProjectMatch;
+  });
+
+  // Calendar logic
+  const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
+  const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
+
+  const handlePrevMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
   };
 
-  const handleViewDetails = (progress) => {
-    setSelectedProgress(progress);
-    setShowDetailModal(true);
+  const handleNextMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
   };
 
-  const getInternStats = (internId) => {
-    const internProgress = allProgress.filter(p => p.internId === internId);
-    if (internProgress.length === 0) return null;
+  const dayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  const monthName = currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' });
 
-    const totalProjects = internProgress.length;
-    const avgCompletion = Math.round(
-      internProgress.reduce((sum, p) => sum + p.completionPercentage, 0) / totalProjects
+  const renderCalendar = () => {
+    if (selectedInternId === 'all' || selectedProjectId === 'all') {
+      return (
+        <div className="calendar-placeholder">
+          <div className="placeholder-icon">📅</div>
+          <p>Please select an intern and project to view the daily log calendar.</p>
+        </div>
+      );
+    }
+
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const daysInMonth = getDaysInMonth(year, month);
+    const firstDay = getFirstDayOfMonth(year, month);
+    const days = [];
+
+    // Empty cells for first week
+    for (let i = 0; i < firstDay; i++) {
+      days.push(<div key={`empty-${i}`} className="calendar-day empty"></div>);
+    }
+
+    const joinDate = currentIntern?.joinDate ? new Date(currentIntern.joinDate) : null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const dayDate = new Date(year, month, d);
+      const isWeekend = dayDate.getDay() === 0 || dayDate.getDay() === 6;
+
+      const log = filteredProgress.find(p => p.logDate === dateStr);
+
+      let statusClass = '';
+      let statusText = '-';
+
+      if (joinDate && dayDate < joinDate) {
+        statusText = 'N/A';
+        statusClass = 'not-applicable';
+      } else if (dayDate > today) {
+        statusText = '-';
+        statusClass = 'future';
+      } else if (log) {
+        statusText = 'LOGGED';
+        statusClass = 'logged';
+      } else if (!isWeekend) {
+        statusText = 'MISSING';
+        statusClass = 'missing';
+      } else {
+        statusText = 'WEEKEND';
+        statusClass = 'weekend';
+      }
+
+      const isSelected = selectedDateProgress?.logDate === dateStr;
+
+      days.push(
+        <div
+          key={d}
+          className={`calendar-day ${statusClass} ${isSelected ? 'selected' : ''}`}
+          onClick={() => {
+            if (log) {
+              setSelectedDateProgress(log);
+              setAdminComment(log.adminComment || '');
+            } else {
+              setSelectedDateProgress({ logDate: dateStr, isDummy: true });
+              setAdminComment('');
+            }
+          }}
+        >
+          <span className="day-number">{d}</span>
+          <div className="day-status-pill">{statusText}</div>
+          {log?.adminComment && <span className="tick-icon">✔️</span>}
+        </div>
+      );
+    }
+
+    return (
+      <div className="calendar-grid">
+        {dayNames.map(name => <div key={name} className="day-name">{name}</div>)}
+        {days}
+      </div>
     );
-    const completedProjects = internProgress.filter(p => p.completionPercentage === 100).length;
-
-    return { totalProjects, avgCompletion, completedProjects };
   };
+
+  const getLogStats = () => {
+    if (selectedInternId === 'all' || selectedProjectId === 'all') return null;
+
+    const loggedDays = filteredProgress.length;
+    const reviewedDays = filteredProgress.filter(p => p.adminComment).length;
+
+    // Estimate missing days since joinDate
+    const joinDate = currentIntern?.joinDate ? new Date(currentIntern.joinDate) : null;
+    let missingDays = 0;
+    if (joinDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      let tempDate = new Date(joinDate);
+      while (tempDate <= today) {
+        const isWeekend = tempDate.getDay() === 0 || tempDate.getDay() === 6;
+        const dateStr = tempDate.toISOString().split('T')[0];
+        const log = filteredProgress.find(p => p.logDate === dateStr);
+        if (!log && !isWeekend) missingDays++;
+        tempDate.setDate(tempDate.getDate() + 1);
+      }
+    }
+
+    return { loggedDays, missingDays, reviewedDays };
+  };
+
+  const handleSaveComment = async () => {
+    if (!selectedDateProgress || selectedDateProgress.isDummy) return;
+
+    const wordCount = adminComment.trim().split(/\s+/).length;
+    if (wordCount < 1 || wordCount > 50) {
+      alert('Admin review comment must be between 1 and 50 words.');
+      return;
+    }
+
+    try {
+      setSavingComment(true);
+      await api.updateProjectProgressComment(selectedDateProgress.id, adminComment);
+
+      const updatedData = await api.getAllProjectProgress();
+      setAllProgress(updatedData);
+
+      const newLog = updatedData.find(p => p.id === selectedDateProgress.id);
+      setSelectedDateProgress(newLog);
+
+      alert('Review comment saved successfully!');
+    } catch (error) {
+      console.error('Error saving comment:', error);
+      alert('Failed to save comment');
+    } finally {
+      setSavingComment(false);
+    }
+  };
+
+  // Logic for the Progress Dashboard
+  let displayPercentage = 0;
+  let displayLabel = 'Overall Progress';
+  let projectTitle = 'No Project Selected';
+  let projectDesc = 'Select an intern and their assigned project to see details and track progress.';
+
+  if (selectedInternId !== 'all') {
+    if (selectedProjectId === 'all') {
+      // Calculate Average Progress across all assigned projects
+      if (internProjects.length > 0) {
+        projectTitle = 'Intern Performance Summary';
+        projectDesc = `Average completion across all ${internProjects.length} projects.`;
+        displayLabel = 'Average Progress';
+
+        let totalPct = 0;
+        internProjects.forEach(proj => {
+          const projLogs = allProgress.filter(p => p.internId === parseInt(selectedInternId) && p.projectId === proj.id);
+          if (projLogs.length > 0) {
+            const latestProjLog = [...projLogs].sort((a, b) => b.logDate.localeCompare(a.logDate))[0];
+            totalPct += latestProjLog.completionPercentage;
+          }
+        });
+        displayPercentage = Math.round(totalPct / internProjects.length);
+      }
+    } else {
+      // Specific Project selected
+      const currentProject = internProjects.find(p => p.id === parseInt(selectedProjectId));
+      projectTitle = currentProject?.title || 'Project Details';
+      projectDesc = currentProject?.description || '';
+
+      const projLogs = filteredProgress.filter(p => p.projectId === parseInt(selectedProjectId));
+      if (projLogs.length > 0) {
+        const latestProjLog = [...projLogs].sort((a, b) => b.logDate.localeCompare(a.logDate))[0];
+        displayPercentage = latestProjLog.completionPercentage;
+      }
+    }
+  }
 
   if (loading) {
     return (
@@ -85,6 +254,8 @@ const InternPerformance = () => {
     );
   }
 
+  const stats = getLogStats();
+
   return (
     <div className="dashboard-container">
       <Sidebar />
@@ -92,281 +263,194 @@ const InternPerformance = () => {
       <main className="main-content">
         <header className="dashboard-header">
           <div>
-            <h1 className="page-title">Intern Performance Monitor</h1>
-            <p className="page-subtitle">Track individual progress and project completion</p>
+            <h1 className="page-title">Intern Performance Overview</h1>
+            <p className="page-subtitle">Select an intern and project to view daily activity logs</p>
           </div>
         </header>
 
-        {/* Stats Overview */}
-        <div className="stats-overview">
-          <div className="stat-card">
-            <div className="stat-content">
-              <div className="stat-value">{interns.length}</div>
-              <div className="stat-label">Active Interns</div>
-            </div>
+        {/* Selection Row */}
+        <div className="selection-card">
+          <div className="selection-group">
+            <label>Select Intern:</label>
+            <select
+              value={selectedInternId}
+              onChange={(e) => {
+                setSelectedInternId(e.target.value);
+                setSelectedProjectId('all');
+                setSelectedDateProgress(null);
+              }}
+              className="selection-select"
+            >
+              <option value="all">Select Intern...</option>
+              {interns.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
+            </select>
           </div>
-          <div className="stat-card">
-            <div className="stat-content">
-              <div className="stat-value">{allProgress.length}</div>
-              <div className="stat-label">Progress Reports</div>
-            </div>
+
+          <div className="selection-group">
+            <label>Select Project:</label>
+            <select
+              value={selectedProjectId}
+              onChange={(e) => {
+                setSelectedProjectId(e.target.value);
+                setSelectedDateProgress(null);
+              }}
+              className="selection-select"
+              disabled={selectedInternId === 'all'}
+            >
+              <option value="all">All Projects (Average)</option>
+              {internProjects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+            </select>
           </div>
-          <div className="stat-card">
-            <div className="stat-content">
-              <div className="stat-value">
-                {allProgress.filter(p => p.completionPercentage === 100).length}
-              </div>
-              <div className="stat-label">Completed Projects</div>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-content">
-              <div className="stat-value">
-                {allProgress.length > 0 
-                  ? Math.round(allProgress.reduce((sum, p) => sum + p.completionPercentage, 0) / allProgress.length)
-                  : 0}%
-              </div>
-              <div className="stat-label">Avg Completion</div>
+
+          <div className="selection-group month-nav">
+            <label>Select Month:</label>
+            <div className="month-controls">
+              <button onClick={handlePrevMonth} className="month-btn">←</button>
+              <span className="current-month-label">{monthName}</span>
+              <button onClick={handleNextMonth} className="month-btn">→</button>
             </div>
           </div>
         </div>
 
-        {/* Filter Section */}
-        <div className="filter-section">
-          <div className="filter-label">
-            Filter by Intern:
-          </div>
-          <select 
-            value={selectedIntern} 
-            onChange={(e) => setSelectedIntern(e.target.value)}
-            className="filter-select"
-          >
-            <option value="all">All Interns</option>
-            {interns.map(intern => {
-              const stats = getInternStats(intern.id);
-              return (
-                <option key={intern.id} value={intern.id}>
-                  {intern.name} {stats && `(${stats.totalProjects} projects, ${stats.avgCompletion}% avg)`}
-                </option>
-              );
-            })}
-          </select>
-        </div>
-
-        {/* Intern Performance Cards (when filtering by specific intern) */}
-        {selectedIntern !== 'all' && (
-          <div className="intern-performance-card">
-            {(() => {
-              const intern = interns.find(i => i.id === parseInt(selectedIntern));
-              const stats = getInternStats(parseInt(selectedIntern));
-              
-              if (!intern || !stats) return null;
-
-              return (
-                <>
-                  <div className="performance-header">
-                    <div className="intern-info">
-                      <div className="intern-avatar">
-                        {intern.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <h3 className="intern-name">{intern.name}</h3>
-                        <p className="intern-email">{intern.email}</p>
-                      </div>
-                    </div>
-                    <div className="performance-stats">
-                      <div className="mini-stat">
-                        <span className="mini-stat-value">{stats.totalProjects}</span>
-                        <span className="mini-stat-label">Projects</span>
-                      </div>
-                      <div className="mini-stat">
-                        <span 
-                          className="mini-stat-value"
-                          style={{ color: getProgressColor(stats.avgCompletion) }}
-                        >
-                          {stats.avgCompletion}%
+        <div className="performance-split-view">
+          {/* Left Side: Dashboard (Hide if no intern selected) */}
+          <div className="performance-dashboard">
+            {selectedInternId !== 'all' ? (
+              <>
+                <div className="project-highlight-card">
+                  <div className="circular-progress-main">
+                    <div
+                      className="completion-circle-large"
+                      style={{
+                        background: `conic-gradient(${getProgressColor(displayPercentage)} ${displayPercentage * 3.6}deg, #ffe0e0 0deg)`
+                      }}
+                    >
+                      <div className="completion-inner-large">
+                        <span className="completion-value-large">
+                          {displayPercentage}%
                         </span>
-                        <span className="mini-stat-label">Avg Progress</span>
-                      </div>
-                      <div className="mini-stat">
-                        <span className="mini-stat-value">{stats.completedProjects}</span>
-                        <span className="mini-stat-label">Completed</span>
+                        <span className="completion-label-large">{displayLabel}</span>
                       </div>
                     </div>
                   </div>
-                </>
-              );
-            })()}
-          </div>
-        )}
 
-        {/* Progress List */}
-        <div className="progress-list">
-          {filteredProgress.length === 0 ? (
-            <div className="empty-state">
-              <h3>No Progress Reports Yet</h3>
-              <p>Progress updates from interns will appear here.</p>
-            </div>
-          ) : (
-            <div className="progress-grid">
-              {filteredProgress.map((progress) => (
-                <div key={progress.id} className="progress-item">
-                  <div className="progress-item-header">
-                    <div className="intern-badge">
-                      {progress.internName}
+                  <div className="project-info-section">
+                    <h2 className="project-title-large">{projectTitle}</h2>
+                    <p className="project-desc-large">{projectDesc}</p>
+                  </div>
+
+                  {stats && (
+                    <div className="quick-stats-grid">
+                      <div className="quick-stat-item">
+                        <span className="stat-icon logged">●</span>
+                        <div className="stat-info">
+                          <span className="stat-num">{stats.loggedDays}</span>
+                          <span className="stat-txt">Logged Days</span>
+                        </div>
+                      </div>
+                      <div className="quick-stat-item">
+                        <span className="stat-icon reviewed">●</span>
+                        <div className="stat-info">
+                          <span className="stat-num">{stats.reviewedDays}</span>
+                          <span className="stat-txt">Reviewed</span>
+                        </div>
+                      </div>
+                      <div className="quick-stat-item">
+                        <span className="stat-icon missing">●</span>
+                        <div className="stat-info">
+                          <span className="stat-num">{stats.missingDays}</span>
+                          <span className="stat-txt">Missing</span>
+                        </div>
+                      </div>
                     </div>
-                    <span className="progress-date">
-                      {formatDate(progress.updatedAt)}
+                  )}
+                </div>
+
+                <div className="intern-mini-profile">
+                  <h3>Intern Info</h3>
+                  <div className="info-row">
+                    <span>Joined:</span>
+                    <strong>{currentIntern?.joinDate || 'N/A'}</strong>
+                  </div>
+                  <div className="info-row">
+                    <span>Status:</span>
+                    <span className={`status-badge ${currentIntern?.status?.toLowerCase()}`}>
+                      {currentIntern?.status || 'N/A'}
                     </span>
                   </div>
-
-                  <h3 className="progress-project-title">
-                    {progress.projectTitle}
-                  </h3>
-
-                  <div className="progress-bar-section">
-                    <div className="progress-bar-header">
-                      <span 
-                        className="progress-percent"
-                        style={{ color: getProgressColor(progress.completionPercentage) }}
-                      >
-                        {progress.completionPercentage}%
-                      </span>
-                    </div>
-                    <div className="progress-bar">
-                      <div 
-                        className="progress-bar-inner"
-                        style={{
-                          width: `${progress.completionPercentage}%`,
-                          background: getProgressColor(progress.completionPercentage)
-                        }}
-                      ></div>
-                    </div>
-                  </div>
-
-                  {progress.description && (
-                    <p className="progress-description">
-                      {progress.description.substring(0, 120)}
-                      {progress.description.length > 120 && '...'}
-                    </p>
-                  )}
-
-                  <div className="progress-tags">
-                    {progress.achievements && (
-                      <span className="progress-tag tag-achievement">
-                        Achievements
-                      </span>
-                    )}
-                    {progress.challenges && (
-                      <span className="progress-tag tag-challenge">
-                        Challenges
-                      </span>
-                    )}
-                    {progress.nextSteps && (
-                      <span className="progress-tag tag-nextsteps">
-                        Next Steps
-                      </span>
-                    )}
-                  </div>
-
-                  <button 
-                    className="btn-view-details"
-                    onClick={() => handleViewDetails(progress)}
-                  >
-                    View Full Details
-                  </button>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </main>
-
-      {/* Detail Modal */}
-      {showDetailModal && selectedProgress && (
-        <div className="modal-overlay" onClick={() => setShowDetailModal(false)}>
-          <div className="detail-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="detail-modal-header">
-              <div>
-                <h2 className="detail-modal-title">
-                  {selectedProgress.projectTitle}
-                </h2>
-                <p className="detail-modal-subtitle">
-                  by {selectedProgress.internName}
-                </p>
+              </>
+            ) : (
+              <div className="selection-placeholder-card">
+                <div className="placeholder-icon">👤</div>
+                <p>Please select an intern to view their performance metrics and project dashboard.</p>
               </div>
-              <button 
-                className="modal-close-btn"
-                onClick={() => setShowDetailModal(false)}
-              >
-                ✕
-              </button>
-            </div>
+            )}
+          </div>
 
-            <div className="detail-modal-body">
-              <div className="detail-section">
-                <div className="detail-section-header">
-                  <h3>Progress</h3>
-                </div>
-                <div className="completion-display">
-                  <div 
-                    className="completion-circle"
-                    style={{ 
-                      background: `conic-gradient(${getProgressColor(selectedProgress.completionPercentage)} ${selectedProgress.completionPercentage * 3.6}deg, #f3f4f6 0deg)`
-                    }}
-                  >
-                    <div className="completion-inner">
-                      <span className="completion-value">
-                        {selectedProgress.completionPercentage}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="detail-section">
-                <div className="detail-section-header">
-                  <h3>Description</h3>
-                </div>
-                <p className="detail-text">{selectedProgress.description || 'No description provided'}</p>
-              </div>
-
-              {selectedProgress.achievements && (
-                <div className="detail-section">
-                  <div className="detail-section-header">
-                    <h3>Achievements</h3>
-                  </div>
-                  <p className="detail-text">{selectedProgress.achievements}</p>
-                </div>
-              )}
-
-              {selectedProgress.challenges && (
-                <div className="detail-section">
-                  <div className="detail-section-header">
-                    <h3>Challenges</h3>
-                  </div>
-                  <p className="detail-text">{selectedProgress.challenges}</p>
-                </div>
-              )}
-
-              {selectedProgress.nextSteps && (
-                <div className="detail-section">
-                  <div className="detail-section-header">
-                    <h3>Next Steps</h3>
-                  </div>
-                  <p className="detail-text">{selectedProgress.nextSteps}</p>
-                </div>
-              )}
-
-              <div className="detail-footer">
-                <span className="detail-timestamp">
-                  Last updated: {formatDate(selectedProgress.updatedAt)}
-                </span>
-              </div>
-            </div>
+          {/* Right Side: Calendar */}
+          <div className="calendar-card">
+            <h3 className="calendar-card-title">Project Log History</h3>
+            {renderCalendar()}
           </div>
         </div>
-      )}
+
+        {/* Selected Log Details & Review Section */}
+        {selectedDateProgress && (
+          <div className="log-detail-section">
+            <header className="log-detail-header">
+              <h3>Log Details for {selectedDateProgress.logDate}</h3>
+              {selectedDateProgress.isDummy && <span className="no-log-warning">No entry made for this date</span>}
+            </header>
+
+            {!selectedDateProgress.isDummy ? (
+              <div className="log-content-grid">
+                <div className="log-answers">
+                  <div className="answer-item">
+                    <h4><span className="ans-icon"></span> Key Achievements</h4>
+                    <p>{selectedDateProgress.achievements || 'Not specified'}</p>
+                  </div>
+                  <div className="answer-item">
+                    <h4><span className="ans-icon"></span> Challenges Faced</h4>
+                    <p>{selectedDateProgress.challenges || 'No challenges reported'}</p>
+                  </div>
+                  <div className="answer-item">
+                    <h4><span className="ans-icon"></span> Plan for Tomorrow</h4>
+                    <p>{selectedDateProgress.nextSteps || 'Not specified'}</p>
+                  </div>
+                </div>
+
+                <div className="admin-review-box">
+                  <h4><span className="ans-icon">💬</span> Admin Review</h4>
+                  <textarea
+                    className="admin-comment-input"
+                    placeholder="Enter your feedback here (Max 50 words)..."
+                    value={adminComment}
+                    onChange={(e) => setAdminComment(e.target.value)}
+                    rows="5"
+                  />
+                  <div className="review-meta">
+                    <span className="word-count">
+                      Word count: {adminComment.trim() ? adminComment.trim().split(/\s+/).length : 0}
+                    </span>
+                    <button
+                      className="btn-save-review"
+                      onClick={handleSaveComment}
+                      disabled={savingComment}
+                    >
+                      {savingComment ? 'Saving...' : 'Save Comment'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="empty-log-state">
+                <p>No log entry found for this date. Daily updates are expected on working days.</p>
+              </div>
+            )}
+          </div>
+        )}
+      </main>
     </div>
   );
 };

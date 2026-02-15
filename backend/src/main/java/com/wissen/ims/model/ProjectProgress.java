@@ -8,10 +8,13 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "project_progress")
+@Table(name = "project_progress", uniqueConstraints = {
+        @UniqueConstraint(columnNames = { "intern_id", "project_id", "log_date" })
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -33,17 +36,23 @@ public class ProjectProgress {
     @Column(nullable = false)
     private Integer completionPercentage; // 0-100
 
-    @Column(length = 2000)
-    private String description;
+    @Column(nullable = false)
+    private LocalDate logDate;
 
-    @Column(length = 1000)
-    private String challenges;
+    @Column(length = 2000)
+    private String description; // General description
 
     @Column(length = 1000)
     private String achievements;
 
     @Column(length = 1000)
+    private String challenges;
+
+    @Column(length = 1000)
     private String nextSteps;
+
+    @Column(length = 500)
+    private String adminComment; // Review comment from admin (10-40 words)
 
     @CreatedDate
     @Column(nullable = false, updatable = false)

@@ -130,7 +130,7 @@ const LearningProgress = () => {
             className={`tab ${activeTab === 'projects' ? 'active' : ''}`}
             onClick={() => setActiveTab('projects')}
           >
-            🎯 Assigned Projects
+            Assigned Projects
           </button>
         </div>
 

@@ -129,7 +129,7 @@ const CourseProjectPool = () => {
                         className={`tab ${activeTab === 'projects' ? 'active' : ''}`}
                         onClick={() => setActiveTab('projects')}
                     >
-                        🎯 Projects Pool
+                        Projects Pool
                     </button>
                 </div>
 

@@ -128,7 +128,7 @@ Login → Dashboard → [Colleges | Interns | Documents | Offers]
                       Visit Done   Documents OK   Generate Offer
 ```
 
-## 🎯 Workflow Example
+##  Workflow Example
 
 1. **HR/Admin logs in** → Views Dashboard
 2. **Adds College Visit** → Schedules recruitment drive

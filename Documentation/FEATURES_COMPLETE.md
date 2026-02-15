@@ -1,6 +1,6 @@
 # Wissen Intern Management System (IMS)
 
-## 🎯 Complete Feature Implementation
+##  Complete Feature Implementation
 
 A comprehensive, role-based intern management portal with interactive UI and full lifecycle management from college onboarding to intern development tracking.
 
@@ -48,7 +48,7 @@ A comprehensive, role-based intern management portal with interactive UI and ful
 
 ### Visual Enhancements
 - ✨ **Smooth Animations**: Fade-in, slide-in, and scale animations
-- 🎯 **Interactive Cards**: Hover effects with elevation changes
+-  **Interactive Cards**: Hover effects with elevation changes
 - 🌈 **Gradient Backgrounds**: Modern gradient designs throughout
 - 📊 **Progress Indicators**: Animated progress bars
 - 🔔 **Real-time Notifications**: Toast notifications for actions
@@ -62,7 +62,7 @@ A comprehensive, role-based intern management portal with interactive UI and ful
 - ⚡ **Fast Navigation**: Smooth transitions between pages
 - 🔍 **Search & Filter**: Quick access to information
 - 📈 **Data Visualization**: Charts and graphs for metrics
-- 🎯 **Contextual Actions**: Quick action buttons where needed
+-  **Contextual Actions**: Quick action buttons where needed
 
 ---
 
@@ -196,7 +196,7 @@ src/
 
 ---
 
-## 🎯 Interactive Features
+##  Interactive Features
 
 ### Animations
 - Fade in on page load

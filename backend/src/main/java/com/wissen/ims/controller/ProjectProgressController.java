@@ -25,6 +25,7 @@ public class ProjectProgressController {
             System.out.println("Received progress request: " + request);
             System.out.println("Intern ID: " + request.getInternId());
             System.out.println("Project ID: " + request.getProjectId());
+            System.out.println("Log Date: " + request.getLogDate());
             System.out.println("Completion: " + request.getCompletionPercentage());
             
             ProjectProgressResponse response = progressService.createOrUpdateProgress(request);
@@ -33,6 +34,23 @@ public class ProjectProgressController {
             e.printStackTrace();
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error("Failed to save progress: " + e.getMessage()));
+        }
+    }
+
+    @PatchMapping("/{id}/comment")
+    public ResponseEntity<ApiResponse<ProjectProgressResponse>> updateAdminComment(
+            @PathVariable Long id,
+            @RequestBody String comment) {
+        try {
+            // Remove quotes if present
+            if (comment != null && comment.startsWith("\"") && comment.endsWith("\"")) {
+                comment = comment.substring(1, comment.length() - 1);
+            }
+            ProjectProgressResponse response = progressService.updateAdminComment(id, comment);
+            return ResponseEntity.ok(ApiResponse.success(response));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Failed to update comment: " + e.getMessage()));
         }
     }
 

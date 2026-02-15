@@ -35,6 +35,7 @@ public class InternLearningController {
                     .internId(intern.getId())
                     .internName(intern.getName())
                     .internEmail(intern.getEmail())
+                    .joinDate(intern.getJoinDate())
                     .courses(intern.getAssignedCourses())
                     .projects(intern.getAssignedProjects())
                     .build();

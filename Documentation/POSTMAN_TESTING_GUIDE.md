@@ -175,7 +175,7 @@ The collection automatically adds this header after login/register.
 
 ---
 
-## 🎯 Status Values Reference
+##  Status Values Reference
 
 ### College Status
 - `PLANNED`

@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import './ProjectProgressForm.css';
 
-const ProjectProgressForm = ({ intern, project, onClose, onSubmit }) => {
+const ProjectProgressForm = ({ intern, project, initialProgress, initialDate, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
-    completionPercentage: 0,
+    completionPercentage: initialProgress?.completionPercentage || 0,
+    logDate: initialProgress?.logDate || (initialDate ? initialDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
     description: '',
-    challenges: '',
     achievements: '',
+    challenges: '',
     nextSteps: ''
   });
-  
+
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -19,7 +20,7 @@ const ProjectProgressForm = ({ intern, project, onClose, onSubmit }) => {
       ...prev,
       [name]: value
     }));
-    
+
     // Clear error for this field
     if (errors[name]) {
       setErrors(prev => ({
@@ -39,13 +40,13 @@ const ProjectProgressForm = ({ intern, project, onClose, onSubmit }) => {
 
   const validate = () => {
     const newErrors = {};
-    
-    if (!formData.description.trim()) {
-      newErrors.description = 'Please describe what you have completed';
+
+    if (!formData.logDate) {
+      newErrors.logDate = 'Please select a date';
     }
-    
-    if (formData.completionPercentage > 0 && !formData.achievements.trim()) {
-      newErrors.achievements = 'Please share your achievements';
+
+    if (!formData.achievements.trim()) {
+      newErrors.achievements = 'Please share your daily achievements';
     }
 
     setErrors(newErrors);
@@ -54,7 +55,7 @@ const ProjectProgressForm = ({ intern, project, onClose, onSubmit }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validate()) {
       return;
     }
@@ -90,7 +91,7 @@ const ProjectProgressForm = ({ intern, project, onClose, onSubmit }) => {
     if (percentage < 25) return '👶';
     if (percentage < 50) return '🔥';
     if (percentage < 75) return '💪';
-    if (percentage < 100) return '🎯';
+    if (percentage < 100) return '';
     return '🎉';
   };
 
@@ -101,7 +102,7 @@ const ProjectProgressForm = ({ intern, project, onClose, onSubmit }) => {
           <div>
             <h2 className="progress-modal-title">
               <span className="progress-emoji">📊</span>
-              Update Project Progress
+              {initialProgress ? 'Edit Daily Log' : 'New Daily Log'}
             </h2>
             <p className="progress-modal-subtitle">
               Track your journey on <strong>{project.title}</strong>
@@ -111,11 +112,44 @@ const ProjectProgressForm = ({ intern, project, onClose, onSubmit }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="progress-form">
-          {/* Completion Percentage */}
+          {/* Admin Comment Read-Only Section */}
+          {initialProgress?.adminComment && (
+            <div className="progress-section admin-feedback-section" style={{ background: '#f5f3ff', padding: '16px', borderRadius: '12px', border: '1px solid #ddd6fe', marginBottom: '20px' }}>
+              <label className="progress-label" style={{ color: '#6d28d9' }}>
+                <span className="label-icon">💬</span>
+                Admin Feedback
+              </label>
+              <p style={{ margin: 0, fontSize: '14px', color: '#4c1d95', lineHeight: '1.5' }}>
+                {initialProgress.adminComment}
+              </p>
+            </div>
+          )}
+
+          {/* Date Selection */}
           <div className="progress-section highlight-section">
             <label className="progress-label">
+              <span className="label-icon">📅</span>
+              Select Date for Entry
+            </label>
+            <input
+              type="date"
+              name="logDate"
+              value={formData.logDate}
+              onChange={handleChange}
+              min={intern.joinDate}
+              max={new Date().toISOString().split('T')[0]}
+              disabled={!!initialDate || !!initialProgress} // Disable date change if editing or specific date clicked
+              className={`progress-date-input ${errors.logDate ? 'error' : ''}`}
+            />
+            {errors.logDate && <span className="error-text">{errors.logDate}</span>}
+            <p className="field-hint">Record daily updates between {intern.joinDate || 'joining date'} and today.</p>
+          </div>
+
+          {/* Completion Percentage */}
+          <div className="progress-section">
+            <label className="progress-label">
               <span className="label-icon">{getCompletionEmoji()}</span>
-              How much have you completed?
+              Overall Project Completion
             </label>
             <div className="percentage-display" style={{ color: getCompletionColor() }}>
               {formData.completionPercentage}%
@@ -133,41 +167,25 @@ const ProjectProgressForm = ({ intern, project, onClose, onSubmit }) => {
               }}
             />
             <div className="percentage-labels">
-              <span>Just Started</span>
-              <span>In Progress</span>
-              <span>Almost There</span>
-              <span>Complete!</span>
+              <span>Started</span>
+              <span>25%</span>
+              <span>50%</span>
+              <span>75%</span>
+              <span>100%</span>
             </div>
-          </div>
-
-          {/* Description */}
-          <div className="progress-section">
-            <label className="progress-label">
-              <span className="label-icon">📝</span>
-              What have you completed so far? *
-            </label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Describe the work you've completed, features implemented, modules finished, etc."
-              className={`progress-textarea ${errors.description ? 'error' : ''}`}
-              rows="4"
-            />
-            {errors.description && <span className="error-text">{errors.description}</span>}
           </div>
 
           {/* Achievements */}
           <div className="progress-section">
             <label className="progress-label">
-              <span className="label-icon">🏆</span>
-              Key Achievements {formData.completionPercentage > 0 && '*'}
+              <span className="label-icon"></span>
+              Key Achievements *
             </label>
             <textarea
               name="achievements"
               value={formData.achievements}
               onChange={handleChange}
-              placeholder="What are you proud of? What milestones did you reach?"
+              placeholder="What did you accomplish today?"
               className={`progress-textarea ${errors.achievements ? 'error' : ''}`}
               rows="3"
             />
@@ -177,32 +195,32 @@ const ProjectProgressForm = ({ intern, project, onClose, onSubmit }) => {
           {/* Challenges */}
           <div className="progress-section">
             <label className="progress-label">
-              <span className="label-icon">🚧</span>
-              Challenges Faced (Optional)
+              <span className="label-icon"></span>
+              Challenges Faced
             </label>
             <textarea
               name="challenges"
               value={formData.challenges}
               onChange={handleChange}
-              placeholder="What difficulties did you encounter? What blockers are you facing?"
+              placeholder="Any difficulties or blockers encountered today?"
               className="progress-textarea"
-              rows="3"
+              rows="2"
             />
           </div>
 
           {/* Next Steps */}
           <div className="progress-section">
             <label className="progress-label">
-              <span className="label-icon">🎯</span>
-              Next Steps (Optional)
+              <span className="label-icon"></span>
+              Plan for Tomorrow
             </label>
             <textarea
               name="nextSteps"
               value={formData.nextSteps}
               onChange={handleChange}
-              placeholder="What are you planning to work on next?"
+              placeholder="What do you plan to work on next?"
               className="progress-textarea"
-              rows="3"
+              rows="2"
             />
           </div>
 

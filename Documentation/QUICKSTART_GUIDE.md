@@ -7,7 +7,7 @@
 
 ---
 
-## 🎯 Installation & Setup
+##  Installation & Setup
 
 ### 1. Install Dependencies
 ```bash
@@ -123,7 +123,7 @@ Register your first user via the registration page. You can create users with di
 
 ---
 
-## 🎯 Common Tasks
+##  Common Tasks
 
 ### For Admin: Add a College
 1. Navigate to **Colleges** page
@@ -262,7 +262,7 @@ Error: Failed to fetch
 
 ---
 
-## 🎯 Keyboard Shortcuts
+##  Keyboard Shortcuts
 
 - `Tab` - Navigate between fields
 - `Enter` - Submit form

@@ -31,17 +31,19 @@ public class ProjectProgressService {
     public ProjectProgressResponse createOrUpdateProgress(ProjectProgressRequest request) {
         Intern intern = internRepository.findById(request.getInternId())
                 .orElseThrow(() -> new RuntimeException("Intern not found"));
-        
+
         Project project = projectRepository.findById(request.getProjectId())
                 .orElseThrow(() -> new RuntimeException("Project not found"));
 
-        // Check if progress already exists for this intern-project combination
+        // Check if progress already exists for this intern-project-date combination
         ProjectProgress progress = progressRepository
-                .findLatestByInternAndProject(request.getInternId(), request.getProjectId())
+                .findByInternIdAndProjectIdAndLogDate(request.getInternId(), request.getProjectId(),
+                        request.getLogDate())
                 .orElse(new ProjectProgress());
 
         progress.setIntern(intern);
         progress.setProject(project);
+        progress.setLogDate(request.getLogDate());
         progress.setCompletionPercentage(request.getCompletionPercentage());
         progress.setDescription(request.getDescription());
         progress.setChallenges(request.getChallenges());
@@ -71,6 +73,16 @@ public class ProjectProgressService {
         return mapToResponse(progress);
     }
 
+    @Transactional
+    public ProjectProgressResponse updateAdminComment(Long id, String comment) {
+        ProjectProgress progress = progressRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Progress record not found"));
+
+        progress.setAdminComment(comment);
+        progress = progressRepository.save(progress);
+        return mapToResponse(progress);
+    }
+
     private ProjectProgressResponse mapToResponse(ProjectProgress progress) {
         return ProjectProgressResponse.builder()
                 .id(progress.getId())
@@ -79,10 +91,12 @@ public class ProjectProgressService {
                 .projectId(progress.getProject().getId())
                 .projectTitle(progress.getProject().getTitle())
                 .completionPercentage(progress.getCompletionPercentage())
+                .logDate(progress.getLogDate())
                 .description(progress.getDescription())
                 .challenges(progress.getChallenges())
                 .achievements(progress.getAchievements())
                 .nextSteps(progress.getNextSteps())
+                .adminComment(progress.getAdminComment())
                 .createdAt(progress.getCreatedAt())
                 .updatedAt(progress.getUpdatedAt())
                 .build();

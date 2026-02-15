@@ -319,7 +319,7 @@ const HiringStatus = () => {
                 </div>
 
                 <div className="info-section">
-                  <h3 className="section-title">🎯 Recruitment Status</h3>
+                  <h3 className="section-title"> Recruitment Status</h3>
                   <div className="info-grid">
                     <div className="info-item">
                       <span className="info-label">Current Round</span>

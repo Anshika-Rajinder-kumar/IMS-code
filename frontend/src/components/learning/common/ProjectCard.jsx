@@ -44,6 +44,12 @@ const ProjectCard = ({ project, progress, onUpdate, getProgressColor }) => {
                             {progress.description.length > 80 && '...'}
                         </p>
                     )}
+                    {progress.adminComment && (
+                        <div className="admin-feedback-badge">
+                            <span className="feedback-icon">💬</span>
+                            Admin: {progress.adminComment.substring(0, 50)}...
+                        </div>
+                    )}
                 </div>
             )}
 

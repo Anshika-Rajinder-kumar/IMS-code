@@ -553,6 +553,10 @@ class ApiService {
   async getProgressById(id) {
     return this.get(`/project-progress/${id}`);
   }
+
+  async updateProjectProgressComment(id, comment) {
+    return this.patch(`/project-progress/${id}/comment`, comment);
+  }
 }
 
 export default new ApiService();

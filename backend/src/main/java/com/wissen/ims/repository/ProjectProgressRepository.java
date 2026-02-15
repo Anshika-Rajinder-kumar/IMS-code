@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,9 +16,13 @@ public interface ProjectProgressRepository extends JpaRepository<ProjectProgress
     
     List<ProjectProgress> findByProjectId(Long projectId);
     
-    @Query("SELECT pp FROM ProjectProgress pp WHERE pp.intern.id = :internId AND pp.project.id = :projectId ORDER BY pp.updatedAt DESC")
+    @Query("SELECT pp FROM ProjectProgress pp WHERE pp.intern.id = :internId AND pp.project.id = :projectId ORDER BY pp.logDate DESC")
     Optional<ProjectProgress> findLatestByInternAndProject(Long internId, Long projectId);
-    
-    @Query("SELECT pp FROM ProjectProgress pp ORDER BY pp.updatedAt DESC")
+
+    Optional<ProjectProgress> findByInternIdAndProjectIdAndLogDate(Long internId, Long projectId, LocalDate logDate);
+
+    List<ProjectProgress> findByInternIdAndProjectIdOrderByLogDateDesc(Long internId, Long projectId);
+
+    @Query("SELECT pp FROM ProjectProgress pp ORDER BY pp.logDate DESC, pp.updatedAt DESC")
     List<ProjectProgress> findAllOrderByUpdatedAtDesc();
 }

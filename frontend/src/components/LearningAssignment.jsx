@@ -166,7 +166,7 @@ const LearningAssignment = () => {
                     <div className="assignment-panel card">
                         {!selectedIntern ? (
                             <div className="empty-state">
-                               
+
                                 <h3>Select an intern to start assigning</h3>
                             </div>
                         ) : (
@@ -221,7 +221,7 @@ const LearningAssignment = () => {
                                     </div>
 
                                     <div className="assignment-section">
-                                        <h4>🎯 Project Pool</h4>
+                                        <h4> Project Pool</h4>
                                         <div className="checkbox-list">
                                             {availableProjects.map(project => (
                                                 <label key={project.id} className="checkbox-item">
