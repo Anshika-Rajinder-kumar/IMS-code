@@ -1,5 +1,7 @@
 package com.wissen.ims.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -75,6 +77,11 @@ public class Intern {
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "intern_projects", joinColumns = @JoinColumn(name = "intern_id"), inverseJoinColumns = @JoinColumn(name = "project_id"))
     private Set<Project> assignedProjects = new HashSet<>();
+
+    @ElementCollection
+    @CollectionTable(name = "intern_skills", joinColumns = @JoinColumn(name = "intern_id"))
+    @Column(name = "skill")
+    private Set<String> extractedSkills = new HashSet<>();
 
     @CreatedDate
     @Column(nullable = false, updatable = false)

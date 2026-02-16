@@ -17,6 +17,7 @@ import LearningProgress from './components/LearningProgress';
 import AttendanceOverview from './components/AttendanceOverview';
 import Settings from './components/Settings';
 import LearningAssignment from './components/LearningAssignment';
+import AutomatedAssignment from './components/AutomatedAssignment';
 import CourseProjectPool from './components/CourseProjectPool';
 import InternPerformance from './components/InternPerformance';
 import Attendance from './components/Attendance';
@@ -98,6 +99,14 @@ function App() {
           element={
             <PrivateRoute>
               <CourseProjectPool />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/automated-assignment"
+          element={
+            <PrivateRoute>
+              <AutomatedAssignment />
             </PrivateRoute>
           }
         />

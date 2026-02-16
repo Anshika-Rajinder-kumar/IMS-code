@@ -35,6 +35,7 @@ const Sidebar = () => {
         { path: '/colleges', label: 'Colleges' },
         { path: '/admin/course-project-pool', label: 'Courses / Projects' },
         { path: '/admin/learning-assignment', label: 'Assign Courses' },
+        { path: '/admin/automated-assignment', label: 'Automated Assignment' },
         { path: '/intern-performance', label: 'Intern Performance' },
         { path: '/hiring-rounds', label: 'Hiring Rounds' },
         { path: '/interns', label: 'Interns' },

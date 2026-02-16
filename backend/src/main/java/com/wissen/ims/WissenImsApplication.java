@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 @SpringBootApplication
 @EnableJpaAuditing
 @org.springframework.scheduling.annotation.EnableScheduling
+@org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 public class WissenImsApplication {
 
     public static void main(String[] args) {

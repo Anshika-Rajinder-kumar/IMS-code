@@ -5,6 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Entity
 @Table(name = "projects")
 @Data
@@ -25,4 +28,9 @@ public class Project {
     private String duration;
 
     private String difficulty;
+
+    @ElementCollection
+    @CollectionTable(name = "project_skills", joinColumns = @JoinColumn(name = "project_id"))
+    @Column(name = "skill")
+    private Set<String> requiredSkills = new HashSet<>();
 }
