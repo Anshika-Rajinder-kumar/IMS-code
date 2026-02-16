@@ -1,14 +1,38 @@
 import React, { useState } from 'react';
 import './ProjectProgressForm.css';
 
-const ProjectProgressForm = ({ intern, project, initialProgress, initialDate, onClose, onSubmit }) => {
+const ProjectProgressForm = ({ intern, project, initialProgress, initialDate, mode = 'log', onClose, onSubmit }) => {
+  // mode: 'log' (calendar click) or 'progress' (button click)
+
+  // Helper to format date for display/input
+  const formatDate = (dateInput) => {
+    try {
+      if (!dateInput) {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+      if (typeof dateInput === 'string') return dateInput; // Already YYYY-MM-DD
+
+      const year = dateInput.getFullYear();
+      const month = String(dateInput.getMonth() + 1).padStart(2, '0');
+      const day = String(dateInput.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    } catch (e) {
+      console.error("Date formatting error", e);
+      return new Date().toISOString().split('T')[0];
+    }
+  };
+
   const [formData, setFormData] = useState({
     completionPercentage: initialProgress?.completionPercentage || 0,
-    logDate: initialProgress?.logDate || (initialDate ? initialDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
-    description: '',
-    achievements: '',
-    challenges: '',
-    nextSteps: ''
+    logDate: initialProgress?.logDate || formatDate(initialDate),
+    description: initialProgress?.description || '',
+    achievements: initialProgress?.achievements || '',
+    challenges: initialProgress?.challenges || '',
+    nextSteps: initialProgress?.nextSteps || ''
   });
 
   const [errors, setErrors] = useState({});
@@ -21,7 +45,6 @@ const ProjectProgressForm = ({ intern, project, initialProgress, initialDate, on
       [name]: value
     }));
 
-    // Clear error for this field
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -41,12 +64,13 @@ const ProjectProgressForm = ({ intern, project, initialProgress, initialDate, on
   const validate = () => {
     const newErrors = {};
 
-    if (!formData.logDate) {
-      newErrors.logDate = 'Please select a date';
-    }
-
-    if (!formData.achievements.trim()) {
-      newErrors.achievements = 'Please share your daily achievements';
+    if (mode === 'log') {
+      if (!formData.logDate) {
+        newErrors.logDate = 'Please select a date';
+      }
+      if (!formData.achievements.trim()) {
+        newErrors.achievements = 'Please share your daily achievements';
+      }
     }
 
     setErrors(newErrors);
@@ -62,12 +86,30 @@ const ProjectProgressForm = ({ intern, project, initialProgress, initialDate, on
 
     setSubmitting(true);
     try {
-      await onSubmit({
+      // In progress mode, we might not have a date selected, so default to today if needed, 
+      // but the backend might expect a date for the UNIQUE constraint if we are creating a new row.
+      // However, 'progress' mode implies updating the PROJECT status overall, but our DB is daily logs.
+      // If we just update progress, we probably should upsert a log for TODAY?
+      // Or maybe the user just wants to update the percentage on the project entity itself?
+      // But ProjectProgress is the only place we store percentage.
+      // So 'Update Progress' likely means "Update status as of TODAY".
+
+      const submissionData = {
         internId: intern.id,
         projectId: project.id,
         ...formData,
         completionPercentage: parseInt(formData.completionPercentage)
-      });
+      };
+
+      // If in progress mode, we ensure we are logging for TODAY unless a log exists? 
+      // Actually, if we are in progress mode, we are likely creating a new log for today or updating today's log.
+      if (mode === 'progress') {
+        submissionData.logDate = new Date().toLocaleDateString('en-CA');
+        // We might want to keep existing text if we are updating today's log?
+        // The initialProgress prop should handle that if passed correctly.
+      }
+
+      await onSubmit(submissionData);
       onClose();
     } catch (error) {
       console.error('Error submitting progress:', error);
@@ -101,19 +143,20 @@ const ProjectProgressForm = ({ intern, project, initialProgress, initialDate, on
         <div className="progress-modal-header">
           <div>
             <h2 className="progress-modal-title">
-              <span className="progress-emoji">📊</span>
-              {initialProgress ? 'Edit Daily Log' : 'New Daily Log'}
+              <span className="progress-emoji">{mode === 'log' ? '📝' : '📊'}</span>
+              {mode === 'log' ? (initialProgress ? 'View/Edit Daily Log' : 'New Daily Log') : 'Update Project Progress'}
             </h2>
             <p className="progress-modal-subtitle">
-              Track your journey on <strong>{project.title}</strong>
+              {project.title}
             </p>
           </div>
           <button className="progress-close-btn" onClick={onClose}>✕</button>
         </div>
 
         <form onSubmit={handleSubmit} className="progress-form">
-          {/* Admin Comment Read-Only Section */}
-          {initialProgress?.adminComment && (
+
+          {/* LOG MODE: Admin Feedback */}
+          {mode === 'log' && initialProgress?.adminComment && (
             <div className="progress-section admin-feedback-section" style={{ background: '#f5f3ff', padding: '16px', borderRadius: '12px', border: '1px solid #ddd6fe', marginBottom: '20px' }}>
               <label className="progress-label" style={{ color: '#6d28d9' }}>
                 <span className="label-icon">💬</span>
@@ -125,106 +168,113 @@ const ProjectProgressForm = ({ intern, project, initialProgress, initialDate, on
             </div>
           )}
 
-          {/* Date Selection */}
-          <div className="progress-section highlight-section">
-            <label className="progress-label">
-              <span className="label-icon">📅</span>
-              Select Date for Entry
-            </label>
-            <input
-              type="date"
-              name="logDate"
-              value={formData.logDate}
-              onChange={handleChange}
-              min={intern.joinDate}
-              max={new Date().toISOString().split('T')[0]}
-              disabled={!!initialDate || !!initialProgress} // Disable date change if editing or specific date clicked
-              className={`progress-date-input ${errors.logDate ? 'error' : ''}`}
-            />
-            {errors.logDate && <span className="error-text">{errors.logDate}</span>}
-            <p className="field-hint">Record daily updates between {intern.joinDate || 'joining date'} and today.</p>
-          </div>
-
-          {/* Completion Percentage */}
-          <div className="progress-section">
-            <label className="progress-label">
-              <span className="label-icon">{getCompletionEmoji()}</span>
-              Overall Project Completion
-            </label>
-            <div className="percentage-display" style={{ color: getCompletionColor() }}>
-              {formData.completionPercentage}%
+          {/* LOG MODE: Date Display */}
+          {mode === 'log' && (
+            <div className="progress-section highlight-section">
+              <label className="progress-label">
+                <span className="label-icon">📅</span>
+                Date
+              </label>
+              <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#374151' }}>
+                {(() => {
+                  try {
+                    const dStr = formData.logDate;
+                    if (!dStr) return '';
+                    const [y, m, d] = dStr.split('-').map(Number);
+                    if (!y || !m || !d) return dStr;
+                    const localDate = new Date(y, m - 1, d);
+                    return localDate.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                  } catch (e) {
+                    return formData.logDate;
+                  }
+                })()}
+              </div>
             </div>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              step="5"
-              value={formData.completionPercentage}
-              onChange={handleSliderChange}
-              className="completion-slider"
-              style={{
-                background: `linear-gradient(to right, ${getCompletionColor()} 0%, ${getCompletionColor()} ${formData.completionPercentage}%, #e5e7eb ${formData.completionPercentage}%, #e5e7eb 100%)`
-              }}
-            />
-            <div className="percentage-labels">
-              <span>Started</span>
-              <span>25%</span>
-              <span>50%</span>
-              <span>75%</span>
-              <span>100%</span>
+          )}
+
+          {/* PROGRESS MODE: Slider */}
+          {mode === 'progress' && (
+            <div className="progress-section">
+              <label className="progress-label">
+                <span className="label-icon">{getCompletionEmoji()}</span>
+                Overall Project Completion
+              </label>
+              <div className="percentage-display" style={{ color: getCompletionColor() }}>
+                {formData.completionPercentage}%
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                value={formData.completionPercentage}
+                onChange={handleSliderChange}
+                className="completion-slider"
+                style={{
+                  background: `linear-gradient(to right, ${getCompletionColor()} 0%, ${getCompletionColor()} ${formData.completionPercentage}%, #e5e7eb ${formData.completionPercentage}%, #e5e7eb 100%)`
+                }}
+              />
+              <div className="percentage-labels">
+                <span>Started</span>
+                <span>25%</span>
+                <span>50%</span>
+                <span>75%</span>
+                <span>100%</span>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Achievements */}
-          <div className="progress-section">
-            <label className="progress-label">
-              <span className="label-icon"></span>
-              Key Achievements *
-            </label>
-            <textarea
-              name="achievements"
-              value={formData.achievements}
-              onChange={handleChange}
-              placeholder="What did you accomplish today?"
-              className={`progress-textarea ${errors.achievements ? 'error' : ''}`}
-              rows="3"
-            />
-            {errors.achievements && <span className="error-text">{errors.achievements}</span>}
-          </div>
+          {/* LOG MODE: Text Fields */}
+          {mode === 'log' && (
+            <>
+              <div className="progress-section">
+                <label className="progress-label">
+                  <span className="label-icon"></span>
+                  Key Achievements *
+                </label>
+                <textarea
+                  name="achievements"
+                  value={formData.achievements}
+                  onChange={handleChange}
+                  placeholder="What did you accomplish?"
+                  className={`progress-textarea ${errors.achievements ? 'error' : ''}`}
+                  rows="3"
+                />
+                {errors.achievements && <span className="error-text">{errors.achievements}</span>}
+              </div>
 
-          {/* Challenges */}
-          <div className="progress-section">
-            <label className="progress-label">
-              <span className="label-icon"></span>
-              Challenges Faced
-            </label>
-            <textarea
-              name="challenges"
-              value={formData.challenges}
-              onChange={handleChange}
-              placeholder="Any difficulties or blockers encountered today?"
-              className="progress-textarea"
-              rows="2"
-            />
-          </div>
+              <div className="progress-section">
+                <label className="progress-label">
+                  <span className="label-icon"></span>
+                  Challenges Faced
+                </label>
+                <textarea
+                  name="challenges"
+                  value={formData.challenges}
+                  onChange={handleChange}
+                  placeholder="Any difficulties or blockers?"
+                  className="progress-textarea"
+                  rows="2"
+                />
+              </div>
 
-          {/* Next Steps */}
-          <div className="progress-section">
-            <label className="progress-label">
-              <span className="label-icon"></span>
-              Plan for Tomorrow
-            </label>
-            <textarea
-              name="nextSteps"
-              value={formData.nextSteps}
-              onChange={handleChange}
-              placeholder="What do you plan to work on next?"
-              className="progress-textarea"
-              rows="2"
-            />
-          </div>
+              <div className="progress-section">
+                <label className="progress-label">
+                  <span className="label-icon"></span>
+                  Plan for Tomorrow
+                </label>
+                <textarea
+                  name="nextSteps"
+                  value={formData.nextSteps}
+                  onChange={handleChange}
+                  placeholder="What's next?"
+                  className="progress-textarea"
+                  rows="2"
+                />
+              </div>
+            </>
+          )}
 
-          {/* Action Buttons */}
           <div className="progress-actions">
             <button type="button" className="btn-secondary" onClick={onClose}>
               Cancel
@@ -238,7 +288,7 @@ const ProjectProgressForm = ({ intern, project, initialProgress, initialDate, on
               ) : (
                 <>
                   <span>💾</span>
-                  Save Progress
+                  Save {mode === 'log' ? 'Log' : 'Progress'}
                 </>
               )}
             </button>

@@ -12,6 +12,7 @@ const InternProjectsView = () => {
     const [loading, setLoading] = useState(true);
     const [selectedProject, setSelectedProject] = useState(null);
     const [selectedDate, setSelectedDate] = useState(null);
+    const [formMode, setFormMode] = useState('log'); // 'log' or 'progress'
     const [showProgressModal, setShowProgressModal] = useState(false);
     const [progressData, setProgressData] = useState({});
     const [currentIntern, setCurrentIntern] = useState(null);
@@ -23,8 +24,14 @@ const InternProjectsView = () => {
 
     const fetchProjects = async () => {
         try {
-            setLoading(true);
+            if (projects.length === 0) setLoading(true);
             const data = await api.getMyLearning();
+
+            if (!data) {
+                setLoading(false);
+                return;
+            }
+
             setProjects(data.projects || []);
 
             if (data.internId) {
@@ -37,18 +44,19 @@ const InternProjectsView = () => {
 
                 if (data.projects?.length > 0) {
                     const progress = await api.getProgressByIntern(data.internId);
-                    // Group logs by projectId
                     const progressMap = {};
-                    progress.forEach(p => {
-                        if (!progressMap[p.projectId]) {
-                            progressMap[p.projectId] = [];
-                        }
-                        progressMap[p.projectId].push(p);
-                    });
+                    if (Array.isArray(progress)) {
+                        progress.forEach(p => {
+                            if (!progressMap[p.projectId]) {
+                                progressMap[p.projectId] = [];
+                            }
+                            progressMap[p.projectId].push(p);
+                        });
+                    }
                     setProgressData(progressMap);
 
-                    // Select first project by default if available
-                    if (data.projects.length > 0) {
+                    // Select first project by default if none selected
+                    if (!selectedProject && data.projects.length > 0) {
                         setSelectedProject(data.projects[0]);
                     }
                 }
@@ -60,9 +68,10 @@ const InternProjectsView = () => {
         }
     };
 
-    const handleUpdate = (date = null) => {
+    const handleUpdate = (date = null, mode = 'log') => {
         if (selectedProject) {
             setSelectedDate(date);
+            setFormMode(mode);
             setShowProgressModal(true);
         }
     };
@@ -158,7 +167,8 @@ const InternProjectsView = () => {
                         // User requirement: "intern can able to update the logs for each date... by selectiong the icon date"
                         // Assuming they can edit existing logs too
                         if (!isWeekend && (dayDate <= today)) {
-                            handleUpdate(dayDate);
+                            // Pass the date string directly to avoid timezone issues
+                            handleUpdate(dateStr, 'log');
                         }
                     }}
                     style={{ cursor: (!isWeekend && dayDate <= today) ? 'pointer' : 'default' }}
@@ -259,10 +269,10 @@ const InternProjectsView = () => {
                                     <div style={{ marginTop: '16px' }}>
                                         <button
                                             className="btn-get-started"
-                                            onClick={handleUpdate}
+                                            onClick={() => handleUpdate(null, 'progress')}
                                             style={{ padding: '10px 16px', fontSize: '14px' }}
                                         >
-                                            Add Daily Log
+                                            Update Progress
                                         </button>
                                     </div>
                                 </div>
@@ -291,11 +301,12 @@ const InternProjectsView = () => {
                 <ProjectProgressForm
                     intern={currentIntern}
                     project={selectedProject}
-                    initialDate={selectedDate}
+                    initialDate={selectedDate} // Now passing a string or null
+                    mode={formMode}
                     initialProgress={
                         // Check if we have a log for the selected date specifically
                         selectedDate
-                            ? (progressData[selectedProject.id] || []).find(p => p.logDate === selectedDate.toISOString().split('T')[0])
+                            ? (progressData[selectedProject.id] || []).find(p => p.logDate === selectedDate) // Comparing strings
                             : (progressData[selectedProject.id] || []).length > 0
                                 ? [...progressData[selectedProject.id]].sort((a, b) => b.logDate.localeCompare(a.logDate))[0]
                                 : null
