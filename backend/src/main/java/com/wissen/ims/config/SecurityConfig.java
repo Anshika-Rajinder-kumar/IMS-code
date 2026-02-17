@@ -23,6 +23,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 public class SecurityConfig {
 
     @Autowired
@@ -42,7 +43,9 @@ public class SecurityConfig {
                                 csp -> csp.policyDirectives("frame-ancestors 'self' http://localhost:3000")))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/auth/**", "/error").permitAll()
+                        .requestMatchers("/v1/automated-assignment/upload").permitAll() // TEMPORARY DEBUG
+                        .requestMatchers("/admin/**").hasAnyRole("ADMIN", "HR")
                         .requestMatchers("/attendance/admin/**").hasAnyRole("ADMIN", "HR")
                         .requestMatchers("/attendance/**").hasRole("INTERN")
                         .anyRequest().authenticated())
