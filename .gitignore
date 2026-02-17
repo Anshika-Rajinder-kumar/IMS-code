@@ -7,10 +7,6 @@ target/
 *.jar
 *.war
 backend/target/
-<<<<<<< HEAD
-
-=======
->>>>>>> Feb-02/tharun_attendence
 
 # IDE / OS files
 .idea/
