@@ -6,6 +6,7 @@ target/
 *.class
 *.jar
 *.war
+backend/target/
 
 # IDE / OS files
 .idea/
